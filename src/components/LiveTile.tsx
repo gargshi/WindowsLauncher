@@ -205,6 +205,8 @@ export const LiveTile: React.FC<LiveTileProps> = ({
     }
   };
 
+  const fontScale = config.fontScale ?? 1;
+
   const renderLiveFrontOrStatic = () => {
     // Specialized rich front face for Clock & Weather 4x2 / 2x2
     if (app.liveFeedType === 'clock-weather' && (tile.size === '4x2' || tile.size === '2x2')) {
@@ -214,11 +216,20 @@ export const LiveTile: React.FC<LiveTileProps> = ({
             <div>
               <div
                 className="font-mono-tabular font-light leading-none tracking-tight"
-                style={{ fontSize: tile.size === '4x2' ? '2.25rem' : '1.65rem', color: textColor }}
+                style={{
+                  fontSize: `${Math.round((tile.size === '4x2' ? 36 : 26) * fontScale)}px`,
+                  color: textColor,
+                }}
               >
                 {hours}:{minutes}
               </div>
-              <div className="text-[11px] font-medium mt-1" style={{ color: mutedTextColor }}>
+              <div
+                className="font-medium mt-1"
+                style={{
+                  color: mutedTextColor,
+                  fontSize: `${Math.round(11 * fontScale)}px`,
+                }}
+              >
                 {dayName}, {monthShort} {dayNum}
               </div>
             </div>
@@ -233,18 +244,29 @@ export const LiveTile: React.FC<LiveTileProps> = ({
                   foregroundColor={textColor}
                   baseSizePx={22}
                 />
-                <span className="font-mono-tabular text-lg font-semibold" style={{ color: textColor }}>
+                <span
+                  className="font-mono-tabular font-semibold"
+                  style={{ color: textColor, fontSize: `${Math.round(18 * fontScale)}px` }}
+                >
                   21°
                 </span>
               </div>
-              <div className="text-[10px]" style={{ color: mutedTextColor }}>
+              <div
+                style={{
+                  color: mutedTextColor,
+                  fontSize: `${Math.round(10 * fontScale)}px`,
+                }}
+              >
                 Cupertino · Clear
               </div>
             </div>
           </div>
 
           {tile.size === '4x2' && (
-            <div className="flex items-center justify-between pt-2 border-t border-current/10 text-[10px]" style={{ color: mutedTextColor }}>
+            <div
+              className="flex items-center justify-between pt-2 border-t border-current/10"
+              style={{ color: mutedTextColor, fontSize: `${Math.round(10 * fontScale)}px` }}
+            >
               <span>H 23° · L 13°</span>
               <span>UV 4 Moderate</span>
               <span>AQI 22 Good</span>
@@ -267,8 +289,18 @@ export const LiveTile: React.FC<LiveTileProps> = ({
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
           {showLabel && (
             <div className="absolute bottom-2 left-2.5 right-2.5 flex items-end justify-between text-white">
-              <span className="text-[11px] font-medium tracking-tight truncate">{effectiveLabel}</span>
-              <span className="text-[10px] font-mono-tabular opacity-75">1,428</span>
+              <span
+                className="font-medium tracking-tight truncate"
+                style={{ fontSize: `${Math.round(11 * fontScale)}px` }}
+              >
+                {effectiveLabel}
+              </span>
+              <span
+                className="font-mono-tabular opacity-75"
+                style={{ fontSize: `${Math.round(10 * fontScale)}px` }}
+              >
+                1,428
+              </span>
             </div>
           )}
         </div>
@@ -288,7 +320,10 @@ export const LiveTile: React.FC<LiveTileProps> = ({
           <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-black/15" />
           <div className="absolute inset-0 p-2.5 flex flex-col justify-between text-white">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-medium uppercase tracking-wider opacity-80">
+              <span
+                className="font-medium uppercase tracking-wider opacity-80"
+                style={{ fontSize: `${Math.round(10 * fontScale)}px` }}
+              >
                 {isMusicPlaying ? 'Playing' : 'Paused'}
               </span>
               <button
@@ -301,8 +336,18 @@ export const LiveTile: React.FC<LiveTileProps> = ({
               </button>
             </div>
             <div>
-              <div className="text-xs font-semibold truncate">Midnight Concrete</div>
-              <div className="text-[10px] opacity-75 truncate">Nils Frahm · Lossless</div>
+              <div
+                className="font-semibold truncate"
+                style={{ fontSize: `${Math.round(12 * fontScale)}px` }}
+              >
+                Midnight Concrete
+              </div>
+              <div
+                className="opacity-75 truncate"
+                style={{ fontSize: `${Math.round(10 * fontScale)}px` }}
+              >
+                Nils Frahm · Lossless
+              </div>
             </div>
           </div>
         </div>
@@ -314,18 +359,30 @@ export const LiveTile: React.FC<LiveTileProps> = ({
       return (
         <div className="relative h-full w-full p-2.5 flex flex-col justify-between">
           <div className="flex items-baseline justify-between">
-            <span className="font-mono-tabular text-xl font-semibold leading-none" style={{ color: textColor }}>
+            <span
+              className="font-mono-tabular font-semibold leading-none"
+              style={{ color: textColor, fontSize: `${Math.round(20 * fontScale)}px` }}
+            >
               {dayNum}
             </span>
-            <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: mutedTextColor }}>
+            <span
+              className="font-medium uppercase tracking-wider"
+              style={{ color: mutedTextColor, fontSize: `${Math.round(10 * fontScale)}px` }}
+            >
               {shortDay}
             </span>
           </div>
           <div className="min-w-0">
-            <div className="text-[11px] font-semibold truncate" style={{ color: textColor }}>
+            <div
+              className="font-semibold truncate"
+              style={{ color: textColor, fontSize: `${Math.round(11 * fontScale)}px` }}
+            >
               10:30 Design Critique
             </div>
-            <div className="text-[10px] truncate" style={{ color: mutedTextColor }}>
+            <div
+              className="truncate"
+              style={{ color: mutedTextColor, fontSize: `${Math.round(10 * fontScale)}px` }}
+            >
               Studio B · 45 min
             </div>
           </div>
@@ -338,18 +395,30 @@ export const LiveTile: React.FC<LiveTileProps> = ({
       return (
         <div className="relative h-full w-full p-2.5 flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-semibold tracking-wide uppercase" style={{ color: mutedTextColor }}>
+            <span
+              className="font-semibold tracking-wide uppercase"
+              style={{ color: mutedTextColor, fontSize: `${Math.round(10 * fontScale)}px` }}
+            >
               OnePlus 15R
             </span>
-            <span className="font-mono-tabular text-[11px] font-semibold" style={{ color: textColor }}>
+            <span
+              className="font-mono-tabular font-semibold"
+              style={{ color: textColor, fontSize: `${Math.round(11 * fontScale)}px` }}
+            >
               88%
             </span>
           </div>
           <div>
-            <div className="text-xs font-semibold truncate" style={{ color: textColor }}>
+            <div
+              className="font-semibold truncate"
+              style={{ color: textColor, fontSize: `${Math.round(12 * fontScale)}px` }}
+            >
               Snapdragon 8 Elite
             </div>
-            <div className="text-[10px] font-mono-tabular truncate" style={{ color: mutedTextColor }}>
+            <div
+              className="font-mono-tabular truncate"
+              style={{ color: mutedTextColor, fontSize: `${Math.round(10 * fontScale)}px` }}
+            >
               120Hz LTPO · 6000 mAh
             </div>
           </div>
@@ -362,8 +431,8 @@ export const LiveTile: React.FC<LiveTileProps> = ({
       <div className="relative h-full w-full p-2 flex flex-col justify-between">
         {effectiveBadge && effectiveBadge > 0 && (
           <span
-            className="absolute top-1.5 right-2 font-mono-tabular text-[11px] font-bold leading-none"
-            style={{ color: textColor }}
+            className="absolute top-1.5 right-2 font-mono-tabular font-bold leading-none"
+            style={{ color: textColor, fontSize: `${Math.round(11 * fontScale)}px` }}
           >
             {effectiveBadge}
           </span>
@@ -402,12 +471,15 @@ export const LiveTile: React.FC<LiveTileProps> = ({
           <div
             className={`w-full truncate leading-tight ${
               config.labelAlignment === 'centered'
-                ? 'text-center text-[11px] font-medium'
+                ? 'text-center font-medium'
                 : config.labelAlignment === 'uppercase-micro'
-                ? 'text-left text-[9px] font-semibold uppercase tracking-wider'
-                : 'text-left text-[11px] font-medium'
+                ? 'text-left font-semibold uppercase tracking-wider'
+                : 'text-left font-medium'
             }`}
-            style={{ color: textColor }}
+            style={{
+              color: textColor,
+              fontSize: `${Math.round((config.labelAlignment === 'uppercase-micro' ? 9 : 11) * fontScale)}px`,
+            }}
           >
             {effectiveLabel}
           </div>
@@ -421,14 +493,23 @@ export const LiveTile: React.FC<LiveTileProps> = ({
       return (
         <div className="h-full w-full p-2 flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-semibold" style={{ color: mutedTextColor }}>
+            <span
+              className="font-semibold"
+              style={{ color: mutedTextColor, fontSize: `${Math.round(10 * fontScale)}px` }}
+            >
               Alex Chen
             </span>
-            <span className="font-mono-tabular text-[10px] font-bold" style={{ color: textColor }}>
+            <span
+              className="font-mono-tabular font-bold"
+              style={{ color: textColor, fontSize: `${Math.round(10 * fontScale)}px` }}
+            >
               {effectiveBadge ?? 3}
             </span>
           </div>
-          <p className="text-[10px] leading-snug line-clamp-2" style={{ color: textColor }}>
+          <p
+            className="leading-snug line-clamp-2"
+            style={{ color: textColor, fontSize: `${Math.round(10 * fontScale)}px` }}
+          >
             Sending the 15R RAW night shots now.
           </p>
         </div>
@@ -438,10 +519,16 @@ export const LiveTile: React.FC<LiveTileProps> = ({
     if (app.liveFeedType === 'mail') {
       return (
         <div className="h-full w-full p-2 flex flex-col justify-between">
-          <span className="text-[10px] font-semibold truncate" style={{ color: mutedTextColor }}>
+          <span
+            className="font-semibold truncate"
+            style={{ color: mutedTextColor, fontSize: `${Math.round(10 * fontScale)}px` }}
+          >
             Inbox · {effectiveBadge ?? 5}
           </span>
-          <p className="text-[10px] leading-snug line-clamp-2" style={{ color: textColor }}>
+          <p
+            className="leading-snug line-clamp-2"
+            style={{ color: textColor, fontSize: `${Math.round(10 * fontScale)}px` }}
+          >
             OxygenOS Beta Build Ready for Review
           </p>
         </div>
@@ -451,14 +538,22 @@ export const LiveTile: React.FC<LiveTileProps> = ({
     if (app.liveFeedType === 'fitness') {
       return (
         <div className="h-full w-full p-2.5 flex flex-col justify-between">
-          <span className="text-[10px] font-medium" style={{ color: mutedTextColor }}>
+          <span
+            className="font-medium"
+            style={{ color: mutedTextColor, fontSize: `${Math.round(10 * fontScale)}px` }}
+          >
             OHealth Today
           </span>
           <div className="flex items-baseline justify-between">
-            <span className="font-mono-tabular text-base font-bold" style={{ color: textColor }}>
+            <span
+              className="font-mono-tabular font-bold"
+              style={{ color: textColor, fontSize: `${Math.round(16 * fontScale)}px` }}
+            >
               7,420
             </span>
-            <span className="text-[10px]" style={{ color: mutedTextColor }}>
+            <span
+              style={{ color: mutedTextColor, fontSize: `${Math.round(10 * fontScale)}px` }}
+            >
               steps · 64 bpm
             </span>
           </div>
@@ -470,25 +565,30 @@ export const LiveTile: React.FC<LiveTileProps> = ({
       return (
         <div className="h-full w-full p-3.5 flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold" style={{ color: textColor }}>
+            <span
+              className="font-semibold"
+              style={{ color: textColor, fontSize: `${Math.round(12 * fontScale)}px` }}
+            >
               3-Day Outlook
             </span>
-            <span className="text-[10px]" style={{ color: mutedTextColor }}>
+            <span
+              style={{ color: mutedTextColor, fontSize: `${Math.round(10 * fontScale)}px` }}
+            >
               Cupertino, CA
             </span>
           </div>
           <div className="grid grid-cols-3 gap-2 text-center">
             <div>
-              <div className="text-[10px]" style={{ color: mutedTextColor }}>Wed</div>
-              <div className="font-mono-tabular text-xs font-semibold" style={{ color: textColor }}>22° / 13°</div>
+              <div style={{ color: mutedTextColor, fontSize: `${Math.round(10 * fontScale)}px` }}>Wed</div>
+              <div className="font-mono-tabular font-semibold" style={{ color: textColor, fontSize: `${Math.round(12 * fontScale)}px` }}>22° / 13°</div>
             </div>
             <div>
-              <div className="text-[10px]" style={{ color: mutedTextColor }}>Thu</div>
-              <div className="font-mono-tabular text-xs font-semibold" style={{ color: textColor }}>19° / 11°</div>
+              <div style={{ color: mutedTextColor, fontSize: `${Math.round(10 * fontScale)}px` }}>Thu</div>
+              <div className="font-mono-tabular font-semibold" style={{ color: textColor, fontSize: `${Math.round(12 * fontScale)}px` }}>19° / 11°</div>
             </div>
             <div>
-              <div className="text-[10px]" style={{ color: mutedTextColor }}>Fri</div>
-              <div className="font-mono-tabular text-xs font-semibold" style={{ color: textColor }}>24° / 14°</div>
+              <div style={{ color: mutedTextColor, fontSize: `${Math.round(10 * fontScale)}px` }}>Fri</div>
+              <div className="font-mono-tabular font-semibold" style={{ color: textColor, fontSize: `${Math.round(12 * fontScale)}px` }}>24° / 14°</div>
             </div>
           </div>
         </div>
@@ -498,12 +598,24 @@ export const LiveTile: React.FC<LiveTileProps> = ({
     if (app.liveFeedType === 'photos') {
       return (
         <div className="h-full w-full p-2.5 flex flex-col justify-between">
-          <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: mutedTextColor }}>
+          <span
+            className="font-semibold uppercase tracking-wider"
+            style={{ color: mutedTextColor, fontSize: `${Math.round(10 * fontScale)}px` }}
+          >
             Hasselblad RAW+
           </span>
           <div>
-            <div className="text-xs font-semibold" style={{ color: textColor }}>1,428 Photos</div>
-            <div className="text-[10px]" style={{ color: mutedTextColor }}>Atrium Twilight · 50MP</div>
+            <div
+              className="font-semibold"
+              style={{ color: textColor, fontSize: `${Math.round(12 * fontScale)}px` }}
+            >
+              1,428 Photos
+            </div>
+            <div
+              style={{ color: mutedTextColor, fontSize: `${Math.round(10 * fontScale)}px` }}
+            >
+              Atrium Twilight · 50MP
+            </div>
           </div>
         </div>
       );
@@ -512,14 +624,24 @@ export const LiveTile: React.FC<LiveTileProps> = ({
     if (app.liveFeedType === 'calendar') {
       return (
         <div className="h-full w-full p-2.5 flex flex-col justify-between">
-          <span className="text-[10px] font-medium" style={{ color: mutedTextColor }}>
+          <span
+            className="font-medium"
+            style={{ color: mutedTextColor, fontSize: `${Math.round(10 * fontScale)}px` }}
+          >
             Later Today
           </span>
           <div>
-            <div className="text-[11px] font-semibold truncate" style={{ color: textColor }}>
+            <div
+              className="font-semibold truncate"
+              style={{ color: textColor, fontSize: `${Math.round(11 * fontScale)}px` }}
+            >
               14:00 Kernel Perf Sync
             </div>
-            <div className="text-[10px]" style={{ color: mutedTextColor }}>3 events remaining</div>
+            <div
+              style={{ color: mutedTextColor, fontSize: `${Math.round(10 * fontScale)}px` }}
+            >
+              3 events remaining
+            </div>
           </div>
         </div>
       );
@@ -528,14 +650,23 @@ export const LiveTile: React.FC<LiveTileProps> = ({
     if (app.liveFeedType === 'system-15r') {
       return (
         <div className="h-full w-full p-2.5 flex flex-col justify-between">
-          <span className="text-[10px] font-medium" style={{ color: mutedTextColor }}>
+          <span
+            className="font-medium"
+            style={{ color: mutedTextColor, fontSize: `${Math.round(10 * fontScale)}px` }}
+          >
             Memory & Storage
           </span>
           <div className="flex items-baseline justify-between">
-            <span className="font-mono-tabular text-sm font-bold" style={{ color: textColor }}>
+            <span
+              className="font-mono-tabular font-bold"
+              style={{ color: textColor, fontSize: `${Math.round(14 * fontScale)}px` }}
+            >
               16 GB RAM
             </span>
-            <span className="font-mono-tabular text-[10px]" style={{ color: mutedTextColor }}>
+            <span
+              className="font-mono-tabular"
+              style={{ color: mutedTextColor, fontSize: `${Math.round(10 * fontScale)}px` }}
+            >
               370 / 512 GB
             </span>
           </div>

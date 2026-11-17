@@ -139,6 +139,7 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
                   backgroundColor: config.accentColor,
                   color: '#FFFFFF',
                   borderRadius: `${Math.min(50, config.tileRadius)}%`,
+                  fontSize: `${Math.round(14 * (config.fontScale ?? 1))}px`,
                 }}
               >
                 {letter}
@@ -196,16 +197,18 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
                         </div>
                         <div className="min-w-0">
                           <div
-                            className={`text-sm font-medium truncate ${
+                            className={`font-medium truncate ${
                               isLight ? 'text-slate-900' : 'text-white'
                             }`}
+                            style={{ fontSize: `${Math.round(14 * (config.fontScale ?? 1))}px` }}
                           >
                             {matchingTile?.customLabel || app.name}
                           </div>
                           <div
-                            className={`text-[11px] truncate ${
+                            className={`truncate ${
                               isLight ? 'text-slate-500' : 'text-zinc-400'
                             }`}
+                            style={{ fontSize: `${Math.round(11 * (config.fontScale ?? 1))}px` }}
                           >
                             {app.category} {isPinned ? '· Pinned' : ''}
                           </div>

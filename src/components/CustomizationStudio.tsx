@@ -743,12 +743,58 @@ export const CustomizationStudio: React.FC<CustomizationStudioProps> = ({
 
             <hr className="border-slate-200 dark:border-white/10" />
 
-            {/* Tile Label Typography */}
+            {/* Launcher Typography & Font Size */}
             <section className="space-y-4">
               <h2 className="text-sm font-semibold text-slate-900 dark:text-white">
-                Tile Label Typography
+                Launcher Typography & Font Size
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-medium text-slate-700 dark:text-zinc-300">
+                    Font Size
+                  </span>
+                  <span className="font-mono-tabular text-slate-500 dark:text-zinc-400">
+                    {Math.round((config.fontScale ?? 1) * 100)}%
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={0.8}
+                  max={1.4}
+                  step={0.05}
+                  value={config.fontScale ?? 1}
+                  onChange={(e) => onUpdateConfig({ fontScale: Number(e.target.value) })}
+                  className="w-full accent-rose-600 cursor-pointer"
+                />
+                <div className="grid grid-cols-4 gap-1.5 pt-0.5">
+                  {[
+                    { label: 'Small', val: 0.85 },
+                    { label: 'Default', val: 1.0 },
+                    { label: 'Large', val: 1.15 },
+                    { label: 'XL', val: 1.3 },
+                  ].map((preset) => {
+                    const active = Math.abs((config.fontScale ?? 1) - preset.val) < 0.025;
+                    return (
+                      <button
+                        key={preset.label}
+                        type="button"
+                        onClick={() => onUpdateConfig({ fontScale: preset.val })}
+                        className={`min-h-[34px] rounded-lg text-[11px] font-medium border transition-colors ${
+                          active
+                            ? 'text-white border-transparent'
+                            : 'border-slate-200 dark:border-white/10 text-slate-600 dark:text-zinc-400 hover:bg-slate-50 dark:hover:bg-white/5'
+                        }`}
+                        style={active ? { backgroundColor: config.accentColor } : undefined}
+                      >
+                        {preset.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
                 <div className="space-y-2">
                   <span className="text-xs font-medium text-slate-600 dark:text-zinc-400 block">
                     Label Visibility

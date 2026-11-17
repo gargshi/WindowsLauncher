@@ -372,6 +372,7 @@ export const DEFAULT_CONFIG: LauncherConfig = {
   iconStrokeWidth: 1.75,
   labelVisibility: 'all',
   labelAlignment: 'bottom-left',
+  fontScale: 1.0,
   wallpaperId: 'oxygen-obsidian',
   showStatusBar: true,
   parallaxDepth: true,

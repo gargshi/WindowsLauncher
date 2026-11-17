@@ -116,6 +116,7 @@ export interface LauncherConfig {
   iconStrokeWidth: number; // 1.25 | 1.75 | 2.25
   labelVisibility: LabelVisibility;
   labelAlignment: LabelAlignment;
+  fontScale: number; // 0.8 to 1.4
   wallpaperId: string;
   showStatusBar: boolean;
   parallaxDepth: boolean;

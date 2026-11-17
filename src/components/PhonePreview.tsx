@@ -283,14 +283,17 @@ export const PhonePreview: React.FC<PhonePreviewProps> = ({
                   <button
                     type="button"
                     onClick={onToggleEditMode}
-                    className={`min-h-[40px] px-3 rounded-xl text-xs font-medium flex items-center gap-1.5 transition-colors ${
+                    className={`min-h-[40px] px-3 rounded-xl font-medium flex items-center gap-1.5 transition-colors ${
                       isEditMode
                         ? 'text-white'
                         : isLight
                         ? 'text-slate-700 hover:bg-slate-900/5'
                         : 'text-zinc-300 hover:bg-white/10'
                     }`}
-                    style={isEditMode ? { backgroundColor: config.accentColor } : undefined}
+                    style={{
+                      ...(isEditMode ? { backgroundColor: config.accentColor } : {}),
+                      fontSize: `${Math.round(12 * (config.fontScale ?? 1))}px`,
+                    }}
                   >
                     {isEditMode ? <Check size={13} /> : <Pencil size={12} />}
                     <span>{isEditMode ? 'Done editing' : 'Edit tiles'}</span>
@@ -299,9 +302,10 @@ export const PhonePreview: React.FC<PhonePreviewProps> = ({
                   <button
                     type="button"
                     onClick={() => onChangeViewMode('apps')}
-                    className={`min-h-[44px] px-3 flex items-center gap-2 text-sm font-medium transition-opacity hover:opacity-80 ${
+                    className={`min-h-[44px] px-3 flex items-center gap-2 font-medium transition-opacity hover:opacity-80 ${
                       isLight ? 'text-slate-900' : 'text-white'
                     }`}
+                    style={{ fontSize: `${Math.round(14 * (config.fontScale ?? 1))}px` }}
                   >
                     <span>All apps</span>
                     <span
@@ -353,18 +357,19 @@ export const PhonePreview: React.FC<PhonePreviewProps> = ({
                     onCloseApp();
                     onChangeViewMode('start');
                   }}
-                  className={`min-h-[44px] rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 backdrop-blur-md border ${
+                  className={`min-h-[44px] rounded-xl font-semibold flex items-center justify-center gap-1.5 backdrop-blur-md border ${
                     viewMode === 'start' && !activeApp
                       ? 'text-white border-transparent'
                       : isLight
                       ? 'bg-white/80 text-slate-800 border-slate-200'
                       : 'bg-zinc-900/80 text-zinc-200 border-white/15'
                   }`}
-                  style={
-                    viewMode === 'start' && !activeApp
+                  style={{
+                    ...(viewMode === 'start' && !activeApp
                       ? { backgroundColor: config.accentColor }
-                      : undefined
-                  }
+                      : {}),
+                    fontSize: `${Math.round(12 * (config.fontScale ?? 1))}px`,
+                  }}
                 >
                   <Grid size={14} />
                   <span>Start</span>
@@ -375,18 +380,19 @@ export const PhonePreview: React.FC<PhonePreviewProps> = ({
                     onCloseApp();
                     onChangeViewMode('apps');
                   }}
-                  className={`min-h-[44px] rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 backdrop-blur-md border ${
+                  className={`min-h-[44px] rounded-xl font-semibold flex items-center justify-center gap-1.5 backdrop-blur-md border ${
                     viewMode === 'apps' && !activeApp
                       ? 'text-white border-transparent'
                       : isLight
                       ? 'bg-white/80 text-slate-800 border-slate-200'
                       : 'bg-zinc-900/80 text-zinc-200 border-white/15'
                   }`}
-                  style={
-                    viewMode === 'apps' && !activeApp
+                  style={{
+                    ...(viewMode === 'apps' && !activeApp
                       ? { backgroundColor: config.accentColor }
-                      : undefined
-                  }
+                      : {}),
+                    fontSize: `${Math.round(12 * (config.fontScale ?? 1))}px`,
+                  }}
                 >
                   <ArrowRight size={14} />
                   <span>Apps</span>
@@ -394,11 +400,14 @@ export const PhonePreview: React.FC<PhonePreviewProps> = ({
                 <button
                   type="button"
                   onClick={onOpenMobileStudio}
-                  className={`min-h-[44px] rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 backdrop-blur-md border ${
+                  className={`min-h-[44px] rounded-xl font-semibold flex items-center justify-center gap-1.5 backdrop-blur-md border ${
                     isLight
                       ? 'bg-white/80 text-slate-800 border-slate-200'
                       : 'bg-zinc-900/80 text-zinc-200 border-white/15'
                   }`}
+                  style={{
+                    fontSize: `${Math.round(12 * (config.fontScale ?? 1))}px`,
+                  }}
                 >
                   <SlidersHorizontal size={14} />
                   <span>Customize</span>
