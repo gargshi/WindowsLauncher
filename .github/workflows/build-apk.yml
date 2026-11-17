@@ -143,6 +143,15 @@ jobs:
                   PackageManager pm = getContext().getPackageManager();
                   Intent launchIntent = pm.getLaunchIntentForPackage(packageName);
                   if (launchIntent == null) {
+                      if ("com.android.dialer".equals(packageName)) {
+                          launchIntent = new Intent(Intent.ACTION_DIAL);
+                      } else if ("com.google.android.apps.messaging".equals(packageName)) {
+                          launchIntent = Intent.makeMainSelectorActivity(Intent.ACTION_MAIN, Intent.CATEGORY_APP_MESSAGING);
+                      } else if ("com.google.android.contacts".equals(packageName)) {
+                          launchIntent = Intent.makeMainSelectorActivity(Intent.ACTION_MAIN, Intent.CATEGORY_APP_CONTACTS);
+                      }
+                  }
+                  if (launchIntent == null) {
                       call.reject("Unable to resolve launch intent for " + packageName);
                       return;
                   }
@@ -164,6 +173,7 @@ jobs:
           cat <<'JAVA' > android/app/src/main/java/com/oxygentile/launcher/MainActivity.java
           package com.oxygentile.launcher;
 
+          import android.graphics.Color;
           import android.os.Bundle;
           import com.getcapacitor.BridgeActivity;
 
@@ -172,6 +182,8 @@ jobs:
               public void onCreate(Bundle savedInstanceState) {
                   registerPlugin(LauncherBridgePlugin.class);
                   super.onCreate(savedInstanceState);
+                  getWindow().setStatusBarColor(Color.parseColor("#09090B"));
+                  getWindow().setNavigationBarColor(Color.parseColor("#09090B"));
               }
           }
           JAVA

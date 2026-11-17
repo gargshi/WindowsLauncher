@@ -52,7 +52,8 @@ export type IconName =
   | 'layers'
   | 'bell'
   | 'folder'
-  | 'activity';
+  | 'activity'
+  | 'users';
 
 export type LiveFeedType =
   | 'none'

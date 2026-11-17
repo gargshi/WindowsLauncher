@@ -32,6 +32,7 @@ import {
   ShoppingBag,
   Sun,
   Terminal,
+  Users,
   Video,
   Wallet,
   Zap,
@@ -83,6 +84,7 @@ export const ICON_REGISTRY: Record<IconName, { label: string; component: LucideI
   bell: { label: 'Alerts', component: Bell },
   folder: { label: 'Files', component: Folder },
   activity: { label: 'Pulse', component: Activity },
+  users: { label: 'Contacts', component: Users },
 };
 
 export const WALLPAPERS: WallpaperOption[] = [
@@ -166,6 +168,15 @@ export const APP_CATALOG: AppDefinition[] = [
     liveFeedType: 'messages',
     badgeCount: 3,
     miniAppSummary: 'RCS Active · 3 unread threads',
+  },
+  {
+    id: 'contacts',
+    name: 'Contacts',
+    packageName: 'com.google.android.contacts',
+    category: 'Communication',
+    icon: 'users',
+    liveFeedType: 'none',
+    miniAppSummary: '312 synced contacts · Speed dial ready',
   },
   {
     id: 'camera',
@@ -367,21 +378,9 @@ export const DEFAULT_CONFIG: LauncherConfig = {
 };
 
 export const DEFAULT_TILES: TileItem[] = [
-  { id: 'tile-weather', appId: 'weather-clock', size: '4x2', liveEnabled: true, order: 0 },
-  { id: 'tile-phone', appId: 'phone', size: '1x1', liveEnabled: false, badgeCount: 1, order: 1 },
-  { id: 'tile-messages', appId: 'messages', size: '1x1', liveEnabled: true, badgeCount: 3, order: 2 },
-  { id: 'tile-photos', appId: 'photos', size: '2x2', liveEnabled: true, order: 3 },
-  { id: 'tile-camera', appId: 'camera', size: '2x1', customColor: '#18181B', liveEnabled: false, order: 4 },
-  { id: 'tile-music', appId: 'music', size: '2x2', liveEnabled: true, order: 5 },
-  { id: 'tile-calendar', appId: 'calendar', size: '2x1', liveEnabled: true, order: 6 },
-  { id: 'tile-mail', appId: 'mail', size: '1x1', liveEnabled: true, badgeCount: 5, order: 7 },
-  { id: 'tile-browser', appId: 'browser', size: '1x1', liveEnabled: false, order: 8 },
-  { id: 'tile-15r', appId: 'system-15r', size: '2x1', customColor: '#1E2028', liveEnabled: true, order: 9 },
-  { id: 'tile-notes', appId: 'notes', size: '1x1', liveEnabled: false, order: 10 },
-  { id: 'tile-settings', appId: 'settings', size: '1x1', liveEnabled: false, order: 11 },
-  { id: 'tile-health', appId: 'health', size: '2x1', liveEnabled: true, order: 12 },
-  { id: 'tile-calculator', appId: 'calculator', size: '1x1', liveEnabled: false, order: 13 },
-  { id: 'tile-maps', appId: 'maps', size: '1x1', liveEnabled: false, order: 14 },
+  { id: 'tile-phone', appId: 'phone', size: '2x2', liveEnabled: false, badgeCount: 1, order: 0 },
+  { id: 'tile-messages', appId: 'messages', size: '2x2', liveEnabled: true, badgeCount: 3, order: 1 },
+  { id: 'tile-contacts', appId: 'contacts', size: '2x1', liveEnabled: false, order: 2 },
 ];
 
 export const LAUNCHER_PRESETS: LauncherPreset[] = [

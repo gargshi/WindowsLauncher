@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import {
   ArrowRight,
   BatteryCharging,
@@ -78,6 +78,27 @@ export const PhonePreview: React.FC<PhonePreviewProps> = ({
 }) => {
   const wallpaper = WALLPAPERS.find((w) => w.id === config.wallpaperId) ?? WALLPAPERS[0];
   const isLight = config.theme === 'light';
+  const swipeStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+
+  const handleScreenPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    swipeStartRef.current = { x: e.clientX, y: e.clientY, time: Date.now() };
+  };
+
+  const handleScreenPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    const start = swipeStartRef.current;
+    swipeStartRef.current = null;
+    if (!start || activeApp) return;
+    const dx = e.clientX - start.x;
+    const dy = e.clientY - start.y;
+    const dt = Date.now() - start.time;
+    if (dt < 750 && Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy) * 1.2) {
+      if (dx > 0 && viewMode === 'start') {
+        onChangeViewMode('apps');
+      } else if (dx < 0 && viewMode === 'apps') {
+        onChangeViewMode('start');
+      }
+    }
+  };
 
   const rowHeightPx =
     config.gridColumns === 3
@@ -178,10 +199,10 @@ export const PhonePreview: React.FC<PhonePreviewProps> = ({
             </div>
           )}
 
-          {/* Status Bar + Punch-Hole Camera Cutout */}
+          {/* Simulated Status Bar + Punch-Hole Camera (Desktop Frame Only) */}
           {config.showStatusBar && (
             <div
-              className={`relative z-20 px-5 pt-2.5 pb-1.5 flex items-center justify-between text-[11px] font-mono-tabular font-medium select-none ${
+              className={`hidden lg:flex relative z-20 px-5 pt-2.5 pb-1.5 items-center justify-between text-[11px] font-mono-tabular font-medium select-none ${
                 isLight ? 'text-slate-900' : 'text-white'
               }`}
             >
@@ -212,61 +233,13 @@ export const PhonePreview: React.FC<PhonePreviewProps> = ({
           )}
 
           {/* Main Screen Content */}
-          <div className="relative z-10 flex-1 overflow-hidden">
+          <div
+            className="relative z-10 flex-1 overflow-hidden touch-pan-y"
+            onPointerDown={handleScreenPointerDown}
+            onPointerUp={handleScreenPointerUp}
+          >
             {viewMode === 'start' ? (
-              <div className="h-full overflow-y-auto no-scrollbar px-3.5 pt-2 pb-16">
-                {/* Subtle Launcher Action Header */}
-                <div className="flex items-center justify-between mb-3 px-0.5">
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`text-xs font-semibold tracking-tight ${
-                        isLight ? 'text-slate-800' : 'text-zinc-200'
-                      }`}
-                    >
-                      Start
-                    </span>
-                    {isEditMode && (
-                      <span
-                        className="text-[11px] font-medium"
-                        style={{ color: config.accentColor }}
-                      >
-                        Editing layout
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={onToggleEditMode}
-                      className={`min-h-[32px] px-2.5 py-1 rounded-lg text-[11px] font-medium flex items-center gap-1.5 transition-colors ${
-                        isEditMode
-                          ? 'text-white'
-                          : isLight
-                          ? 'bg-white/70 text-slate-800 hover:bg-white'
-                          : 'bg-white/10 text-zinc-200 hover:bg-white/20'
-                      }`}
-                      style={isEditMode ? { backgroundColor: config.accentColor } : undefined}
-                    >
-                      {isEditMode ? <Check size={12} /> : <Pencil size={11} />}
-                      <span>{isEditMode ? 'Done' : 'Edit'}</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => onChangeViewMode('apps')}
-                      className={`min-h-[32px] px-2.5 py-1 rounded-lg text-[11px] font-medium flex items-center gap-1 transition-colors ${
-                        isLight
-                          ? 'bg-white/70 text-slate-800 hover:bg-white'
-                          : 'bg-white/10 text-zinc-200 hover:bg-white/20'
-                      }`}
-                    >
-                      <span>Apps</span>
-                      <ArrowRight size={11} />
-                    </button>
-                  </div>
-                </div>
-
+              <div className="h-full overflow-y-auto no-scrollbar px-3.5 pt-3 pb-16">
                 {/* Live Tile Dense Grid */}
                 <div
                   className={`grid ${gridColsClass} grid-flow-dense`}
@@ -305,8 +278,24 @@ export const PhonePreview: React.FC<PhonePreviewProps> = ({
                   })}
                 </div>
 
-                {/* Windows Phone Style All Apps Footer Prompt */}
-                <div className="mt-5 flex items-center justify-end">
+                {/* Windows Phone Style Footer Actions */}
+                <div className="mt-5 flex items-center justify-between">
+                  <button
+                    type="button"
+                    onClick={onToggleEditMode}
+                    className={`min-h-[40px] px-3 rounded-xl text-xs font-medium flex items-center gap-1.5 transition-colors ${
+                      isEditMode
+                        ? 'text-white'
+                        : isLight
+                        ? 'text-slate-700 hover:bg-slate-900/5'
+                        : 'text-zinc-300 hover:bg-white/10'
+                    }`}
+                    style={isEditMode ? { backgroundColor: config.accentColor } : undefined}
+                  >
+                    {isEditMode ? <Check size={13} /> : <Pencil size={12} />}
+                    <span>{isEditMode ? 'Done editing' : 'Edit tiles'}</span>
+                  </button>
+
                   <button
                     type="button"
                     onClick={() => onChangeViewMode('apps')}
@@ -417,7 +406,7 @@ export const PhonePreview: React.FC<PhonePreviewProps> = ({
               </div>
             )}
 
-            {/* OxygenOS Home Gesture Pill */}
+            {/* OxygenOS Home Gesture Pill (Desktop Frame Only) */}
             <button
               type="button"
               aria-label="Home gesture bar"
@@ -425,7 +414,7 @@ export const PhonePreview: React.FC<PhonePreviewProps> = ({
                 onCloseApp();
                 onChangeViewMode('start');
               }}
-              className="w-28 h-5 flex items-center justify-center cursor-pointer group"
+              className="hidden lg:flex w-28 h-5 items-center justify-center cursor-pointer group"
             >
               <span
                 className={`block w-24 h-1 rounded-full transition-all group-hover:w-28 ${

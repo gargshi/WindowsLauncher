@@ -25,7 +25,7 @@ import {
   openAndroidDefaultHomeSettings,
 } from './utils/androidLauncherBridge';
 
-const STORAGE_KEY = 'oxygentile_15r_state_v1';
+const STORAGE_KEY = 'oxygentile_15r_state_v2';
 
 const TILE_SIZE_CYCLE: TileSize[] = ['1x1', '2x1', '2x2', '4x2'];
 
@@ -235,6 +235,23 @@ export default function App() {
     if (isNativeAndroid) {
       const launched = await launchNativeAndroidApp(app.packageName);
       if (launched) return;
+      // Match installed OnePlus/Android default package if generic package name differs
+      const keyword =
+        app.id === 'phone'
+          ? /dialer|phone/i
+          : app.id === 'messages'
+          ? /messaging|mms|messages/i
+          : app.id === 'contacts'
+          ? /contacts/i
+          : null;
+      if (keyword) {
+        const matched = apps.find(
+          (candidate) => candidate.id.startsWith('android-') && keyword.test(candidate.packageName)
+        );
+        if (matched && (await launchNativeAndroidApp(matched.packageName))) {
+          return;
+        }
+      }
     }
     setActiveApp(app);
   };
