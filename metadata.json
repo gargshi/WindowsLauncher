@@ -1,0 +1,6 @@
+{
+  "name": "OxygenTile Launcher",
+  "description": "A Windows Phone inspired Live Tile system launcher for OnePlus 15R with deep icon, grid, and layout customization.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

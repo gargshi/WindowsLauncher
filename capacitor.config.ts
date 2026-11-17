@@ -1,0 +1,10 @@
+const config = {
+  appId: 'com.oxygentile.launcher',
+  appName: 'OxygenTile',
+  webDir: 'dist',
+  server: {
+    androidScheme: 'https',
+  },
+};
+
+export default config;

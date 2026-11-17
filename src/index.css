@@ -1,0 +1,93 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  :root {
+    --font-display: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    --font-body: 'Manrope', system-ui, -apple-system, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+  }
+
+  body {
+    font-family: var(--font-body);
+    overflow-x: hidden;
+  }
+
+  h1, h2, h3, h4, .font-display {
+    font-family: var(--font-display);
+  }
+
+  .font-mono-tabular {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Metro 3D Live Tile Perspective */
+.tile-perspective {
+  perspective: 900px;
+}
+
+.tile-flip-inner {
+  transform-style: preserve-3d;
+  transition: transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.tile-face {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.tile-face-back {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform: rotateX(180deg);
+}
+
+/* Subtle Metro Edit Wiggle */
+@keyframes metro-tilt {
+  0%, 100% {
+    transform: rotate(-0.6deg) scale(0.97);
+  }
+  50% {
+    transform: rotate(0.6deg) scale(0.97);
+  }
+}
+
+.tile-editing {
+  animation: metro-tilt 0.42s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tile-editing {
+    animation: none;
+    transform: scale(0.96);
+  }
+  .tile-flip-inner {
+    transition: none;
+  }
+}
+
+/* Clean Thin Scrollbar for Phone & Studio */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.studio-scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.studio-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.studio-scroll::-webkit-scrollbar-thumb {
+  background: rgba(161, 161, 170, 0.25);
+  border-radius: 9999px;
+}
+.studio-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(161, 161, 170, 0.45);
+}
