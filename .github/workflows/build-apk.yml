@@ -26,6 +26,27 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
+      - name: Cache Android Debug Keystore
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: android-debug-keystore-v1
+
+      - name: Ensure Debug Keystore Exists
+        run: |
+          mkdir -p ~/.android
+          if [ ! -f ~/.android/debug.keystore ]; then
+            keytool -genkeypair -v \
+              -keystore ~/.android/debug.keystore \
+              -storepass android \
+              -alias androiddebugkey \
+              -keypass android \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -dname "CN=Android Debug,O=Android,C=US"
+          fi
+
       - name: Setup Android SDK (API 34)
         run: |
           SDK_DIR="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
@@ -155,9 +176,13 @@ jobs:
                       call.reject("Unable to resolve launch intent for " + packageName);
                       return;
                   }
-                  launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                  getContext().startActivity(launchIntent);
-                  call.resolve();
+                  try {
+                      launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                      getContext().startActivity(launchIntent);
+                      call.resolve();
+                  } catch (Exception e) {
+                      call.reject("Failed to launch " + packageName + ": " + e.getMessage());
+                  }
               }
 
               @PluginMethod
@@ -188,8 +213,18 @@ jobs:
           }
           JAVA
 
-      - name: Sync Capacitor & Assemble Debug APK
+      - name: Bump versionCode & Assemble Debug APK
         run: |
+          python3 - <<'PY'
+          import os, re
+          from pathlib import Path
+          gradle_path = Path("android/app/build.gradle")
+          text = gradle_path.read_text()
+          run_num = os.environ.get("GITHUB_RUN_NUMBER", "1")
+          text = re.sub(r'versionCode\s+\d+', f'versionCode {run_num}', text, count=1)
+          text = re.sub(r'versionName\s+"[^"]+"', f'versionName "1.0.{run_num}"', text, count=1)
+          gradle_path.write_text(text)
+          PY
           npx cap sync android
           cd android
           chmod +x gradlew
