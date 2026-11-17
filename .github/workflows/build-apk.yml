@@ -26,8 +26,15 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Setup Android SDK (API 34)
+        run: |
+          SDK_DIR="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          echo "ANDROID_HOME=$SDK_DIR" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$SDK_DIR" >> "$GITHUB_ENV"
+          SDKMANAGER=$(find "$SDK_DIR/cmdline-tools" -name sdkmanager -type f | sort -V | tail -n 1)
+          echo "Using sdkmanager: $SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses > /dev/null || true
+          "$SDKMANAGER" "platform-tools" "platforms;android-34" "build-tools;34.0.0"
 
       - name: Install dependencies & build web bundle
         run: |
@@ -42,6 +49,7 @@ jobs:
       - name: Configure Home Launcher Manifest & Native Bridge
         run: |
           python3 - <<'PY'
+          import re
           from pathlib import Path
 
           manifest_path = Path("android/app/src/main/AndroidManifest.xml")
@@ -55,11 +63,14 @@ jobs:
               )
 
           if "android.intent.category.HOME" not in manifest:
-              manifest = manifest.replace(
-                  '<category android:name="android.intent.category.LAUNCHER" />',
-                  '<category android:name="android.intent.category.LAUNCHER" />\n                <category android:name="android.intent.category.HOME" />\n                <category android:name="android.intent.category.DEFAULT" />',
-                  1,
+              manifest, count = re.subn(
+                  r'(<category\s+android:name="android\.intent\.category\.LAUNCHER"\s*/>)',
+                  r'\1\n                <category android:name="android.intent.category.HOME" />\n                <category android:name="android.intent.category.DEFAULT" />',
+                  manifest,
+                  count=1,
               )
+              if count == 0:
+                  raise RuntimeError("Could not find LAUNCHER category in AndroidManifest.xml")
 
           manifest_path.write_text(manifest)
           PY
