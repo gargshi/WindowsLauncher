@@ -107,6 +107,7 @@ jobs:
           import android.graphics.Bitmap;
           import android.graphics.Canvas;
           import android.graphics.drawable.Drawable;
+          import android.provider.CallLog;
           import android.provider.Settings;
           import android.util.Base64;
           import com.getcapacitor.JSArray;
@@ -157,14 +158,44 @@ jobs:
               @PluginMethod
               public void launchApp(PluginCall call) {
                   String packageName = call.getString("packageName");
+                  Boolean preferRecents = call.getBoolean("preferRecents", false);
                   if (packageName == null || packageName.isEmpty()) {
                       call.reject("Missing packageName");
                       return;
                   }
                   PackageManager pm = getContext().getPackageManager();
+                  boolean isDialer = Boolean.TRUE.equals(preferRecents)
+                      || "com.android.dialer".equals(packageName)
+                      || packageName.toLowerCase().contains("dialer");
+
+                  if (isDialer) {
+                      try {
+                          Intent recentsIntent = new Intent(Intent.ACTION_VIEW);
+                          recentsIntent.setType(CallLog.Calls.CONTENT_TYPE);
+                          recentsIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                          if (recentsIntent.resolveActivity(pm) != null) {
+                              getContext().startActivity(recentsIntent);
+                              call.resolve();
+                              return;
+                          }
+                      } catch (Exception ignored) {}
+                  }
+
                   Intent launchIntent = pm.getLaunchIntentForPackage(packageName);
+                  if (launchIntent == null && isDialer) {
+                      String[] dialerCandidates = new String[] {
+                          "com.google.android.dialer",
+                          "com.oplus.dialer",
+                          "com.oneplus.dialer",
+                          "com.android.dialer"
+                      };
+                      for (String candidate : dialerCandidates) {
+                          launchIntent = pm.getLaunchIntentForPackage(candidate);
+                          if (launchIntent != null) break;
+                      }
+                  }
                   if (launchIntent == null) {
-                      if ("com.android.dialer".equals(packageName)) {
+                      if (isDialer) {
                           launchIntent = new Intent(Intent.ACTION_DIAL);
                       } else if ("com.google.android.apps.messaging".equals(packageName)) {
                           launchIntent = Intent.makeMainSelectorActivity(Intent.ACTION_MAIN, Intent.CATEGORY_APP_MESSAGING);

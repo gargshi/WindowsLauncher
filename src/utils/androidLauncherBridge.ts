@@ -8,7 +8,7 @@ interface NativeInstalledApp {
 
 interface LauncherBridgePlugin {
   getInstalledApps: () => Promise<{ apps: NativeInstalledApp[] }>;
-  launchApp: (options: { packageName: string }) => Promise<void>;
+  launchApp: (options: { packageName: string; preferRecents?: boolean }) => Promise<void>;
   openHomeSettings: () => Promise<void>;
 }
 
@@ -50,12 +50,15 @@ export async function fetchNativeAndroidApps(): Promise<AppDefinition[] | null> 
   }
 }
 
-export async function launchNativeAndroidApp(packageName: string): Promise<boolean> {
+export async function launchNativeAndroidApp(
+  packageName: string,
+  options?: { preferRecents?: boolean }
+): Promise<boolean> {
   if (!isAndroidNativeLauncher()) return false;
   try {
     const bridge = (window as CapacitorWindow).Capacitor?.Plugins?.LauncherBridge;
     if (!bridge) return false;
-    await bridge.launchApp({ packageName });
+    await bridge.launchApp({ packageName, preferRecents: options?.preferRecents });
     return true;
   } catch {
     return false;

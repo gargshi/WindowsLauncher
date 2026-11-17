@@ -30,6 +30,7 @@ import {
   Settings,
   ShieldCheck,
   ShoppingBag,
+  SlidersHorizontal,
   Sun,
   Terminal,
   Users,
@@ -85,6 +86,7 @@ export const ICON_REGISTRY: Record<IconName, { label: string; component: LucideI
   folder: { label: 'Files', component: Folder },
   activity: { label: 'Pulse', component: Activity },
   users: { label: 'Contacts', component: Users },
+  sliders: { label: 'Customize', component: SlidersHorizontal },
 };
 
 export const WALLPAPERS: WallpaperOption[] = [
@@ -177,6 +179,15 @@ export const APP_CATALOG: AppDefinition[] = [
     icon: 'users',
     liveFeedType: 'none',
     miniAppSummary: '312 synced contacts · Speed dial ready',
+  },
+  {
+    id: 'customize',
+    name: 'Customize',
+    packageName: 'com.oxygentile.customize',
+    category: 'System',
+    icon: 'sliders',
+    liveFeedType: 'none',
+    miniAppSummary: 'Tile grid, colors, corner radius, typography, and backups',
   },
   {
     id: 'camera',
@@ -361,11 +372,11 @@ export const DEFAULT_CONFIG: LauncherConfig = {
   tileColor: 'accent',
   gridColumns: 4,
   tileGap: 8,
-  tileRadius: 18,
+  tileRadius: 0,
   tileSurface: 'glass',
   tileOpacity: 0.78,
   tileBlur: 14,
-  liveAnimation: 'flip',
+  liveAnimation: 'static',
   liveIntervalMs: 6000,
   iconStyle: 'metro',
   iconScale: 1.0,
@@ -380,8 +391,9 @@ export const DEFAULT_CONFIG: LauncherConfig = {
 
 export const DEFAULT_TILES: TileItem[] = [
   { id: 'tile-phone', appId: 'phone', size: '2x2', liveEnabled: false, badgeCount: 1, order: 0 },
-  { id: 'tile-messages', appId: 'messages', size: '2x2', liveEnabled: true, badgeCount: 3, order: 1 },
-  { id: 'tile-contacts', appId: 'contacts', size: '2x1', liveEnabled: false, order: 2 },
+  { id: 'tile-messages', appId: 'messages', size: '2x2', liveEnabled: false, badgeCount: 3, order: 1 },
+  { id: 'tile-contacts', appId: 'contacts', size: '2x2', liveEnabled: false, order: 2 },
+  { id: 'tile-customize', appId: 'customize', size: '2x2', liveEnabled: false, order: 3 },
 ];
 
 export const LAUNCHER_PRESETS: LauncherPreset[] = [

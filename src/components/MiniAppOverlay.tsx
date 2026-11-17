@@ -5,6 +5,10 @@ import {
   Check,
   Cpu,
   Pause,
+  Phone,
+  PhoneIncoming,
+  PhoneMissed,
+  PhoneOutgoing,
   Pin,
   Play,
   SkipBack,
@@ -38,6 +42,10 @@ export const MiniAppOverlay: React.FC<MiniAppOverlayProps> = ({
   onTogglePin,
   onOpenTileInspector,
 }) => {
+  // Phone mini-app state (defaults to Recents)
+  const [phoneTab, setPhoneTab] = useState<'recents' | 'keypad'>('recents');
+  const [dialedNumber, setDialedNumber] = useState('');
+
   // Camera mini-app state
   const [focalLength, setFocalLength] = useState<'24mm' | '50mm' | '85mm'>('24mm');
   const [shutterFlash, setShutterFlash] = useState(false);
@@ -394,7 +402,131 @@ export const MiniAppOverlay: React.FC<MiniAppOverlayProps> = ({
           </div>
         )}
 
-        {!['camera', 'music', 'calculator', 'notes', 'system-15r'].includes(app.id) && (
+        {app.id === 'phone' && (
+          <div className="h-full flex flex-col gap-4">
+            <div
+              className={`grid grid-cols-2 p-1 rounded-xl ${
+                isLight ? 'bg-slate-200/70' : 'bg-white/10'
+              }`}
+            >
+              <button
+                type="button"
+                onClick={() => setPhoneTab('recents')}
+                className={`py-2 rounded-lg text-xs font-semibold transition-colors ${
+                  phoneTab === 'recents'
+                    ? 'text-white'
+                    : isLight
+                    ? 'text-slate-600'
+                    : 'text-zinc-300'
+                }`}
+                style={phoneTab === 'recents' ? { backgroundColor: config.accentColor } : undefined}
+              >
+                Recents
+              </button>
+              <button
+                type="button"
+                onClick={() => setPhoneTab('keypad')}
+                className={`py-2 rounded-lg text-xs font-semibold transition-colors ${
+                  phoneTab === 'keypad'
+                    ? 'text-white'
+                    : isLight
+                    ? 'text-slate-600'
+                    : 'text-zinc-300'
+                }`}
+                style={phoneTab === 'keypad' ? { backgroundColor: config.accentColor } : undefined}
+              >
+                Keypad
+              </button>
+            </div>
+
+            {phoneTab === 'recents' ? (
+              <div className={`divide-y ${isLight ? 'divide-slate-200' : 'divide-white/10'}`}>
+                {[
+                  { name: 'Studio Desk', type: 'missed', time: '10:42 AM', meta: 'Mobile · Missed' },
+                  { name: 'Alex Chen', type: 'incoming', time: 'Yesterday', meta: 'VoLTE HD · 4m 18s' },
+                  { name: 'Maya Lin', type: 'outgoing', time: 'Yesterday', meta: '5G · 2m 05s' },
+                  { name: 'OnePlus Support', type: 'incoming', time: 'Nov 14', meta: 'Toll Free · 6m 40s' },
+                ].map((entry) => (
+                  <div key={`${entry.name}-${entry.time}`} className="py-3 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div
+                        className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
+                          entry.type === 'missed'
+                            ? 'bg-rose-500/15 text-rose-500'
+                            : isLight
+                            ? 'bg-slate-200 text-slate-700'
+                            : 'bg-white/10 text-zinc-200'
+                        }`}
+                      >
+                        {entry.type === 'missed' ? (
+                          <PhoneMissed size={15} />
+                        ) : entry.type === 'incoming' ? (
+                          <PhoneIncoming size={15} />
+                        ) : (
+                          <PhoneOutgoing size={15} />
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <div
+                          className={`text-sm font-medium truncate ${
+                            entry.type === 'missed' ? 'text-rose-500' : ''
+                          }`}
+                        >
+                          {entry.name}
+                        </div>
+                        <div className="text-[11px] opacity-60 truncate">{entry.meta}</div>
+                      </div>
+                    </div>
+                    <span className="text-[11px] font-mono-tabular opacity-60 shrink-0">
+                      {entry.time}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex-1 flex flex-col justify-end gap-3 pb-2">
+                <div className="text-center text-2xl font-mono-tabular tracking-wider min-h-[36px]">
+                  {dialedNumber || 'Enter number'}
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#'].map((digit) => (
+                    <button
+                      key={digit}
+                      type="button"
+                      onClick={() => setDialedNumber((d) => (d.length < 15 ? d + digit : d))}
+                      className={`h-12 rounded-xl font-mono-tabular text-base font-semibold transition-transform active:scale-95 ${
+                        isLight ? 'bg-slate-200/80 text-slate-900' : 'bg-white/10 text-white'
+                      }`}
+                    >
+                      {digit}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex items-center justify-center gap-3 pt-1">
+                  <button
+                    type="button"
+                    aria-label="Call number"
+                    className="w-14 h-14 rounded-full text-white flex items-center justify-center"
+                    style={{ backgroundColor: config.accentColor }}
+                  >
+                    <Phone size={20} />
+                  </button>
+                  {dialedNumber && (
+                    <button
+                      type="button"
+                      onClick={() => setDialedNumber((d) => d.slice(0, -1))}
+                      className="px-3 py-2 rounded-xl text-xs font-medium bg-white/10"
+                    >
+                      Delete
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {!['phone', 'camera', 'music', 'calculator', 'notes', 'system-15r'].includes(app.id) && (
           <div className="py-6 space-y-5">
             <div className="flex items-center gap-4">
               <div

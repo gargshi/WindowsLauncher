@@ -53,7 +53,8 @@ export type IconName =
   | 'bell'
   | 'folder'
   | 'activity'
-  | 'users';
+  | 'users'
+  | 'sliders';
 
 export type LiveFeedType =
   | 'none'

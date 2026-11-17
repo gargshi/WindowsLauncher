@@ -25,7 +25,7 @@ import {
   openAndroidDefaultHomeSettings,
 } from './utils/androidLauncherBridge';
 
-const STORAGE_KEY = 'oxygentile_15r_state_v2';
+const STORAGE_KEY = 'oxygentile_15r_state_v3';
 
 const TILE_SIZE_CYCLE: TileSize[] = ['1x1', '2x1', '2x2', '4x2'];
 
@@ -168,8 +168,8 @@ export default function App() {
     const newTile: TileItem = {
       id: `tile-${app.id}-${Date.now()}`,
       appId: app.id,
-      size: app.liveFeedType !== 'none' ? '2x1' : '1x1',
-      liveEnabled: app.liveFeedType !== 'none',
+      size: '1x1',
+      liveEnabled: false,
       badgeCount: app.badgeCount,
       order: tiles.length,
     };
@@ -232,8 +232,14 @@ export default function App() {
   };
 
   const handleLaunchApp = async (app: AppDefinition) => {
+    if (app.id === 'customize') {
+      setStudioTab('layout');
+      setMobileStudioOpen(true);
+      return;
+    }
     if (isNativeAndroid) {
-      const launched = await launchNativeAndroidApp(app.packageName);
+      const preferRecents = app.id === 'phone' || /dialer/i.test(app.packageName);
+      const launched = await launchNativeAndroidApp(app.packageName, { preferRecents });
       if (launched) return;
       // Match installed OnePlus/Android default package if generic package name differs
       const keyword =
@@ -248,7 +254,10 @@ export default function App() {
         const matched = apps.find(
           (candidate) => candidate.id.startsWith('android-') && keyword.test(candidate.packageName)
         );
-        if (matched && (await launchNativeAndroidApp(matched.packageName))) {
+        if (
+          matched &&
+          (await launchNativeAndroidApp(matched.packageName, { preferRecents }))
+        ) {
           return;
         }
       }
@@ -373,7 +382,6 @@ export default function App() {
             onInspectAppTile={handleInspectAppTile}
             onCycleAlertMode={handleCycleAlertMode}
             onToggleMusic={() => setIsMusicPlaying((p) => !p)}
-            onOpenMobileStudio={() => setMobileStudioOpen(true)}
           />
         </section>
 

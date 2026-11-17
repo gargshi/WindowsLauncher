@@ -5,9 +5,7 @@ import {
   Bell,
   BellOff,
   Check,
-  Grid,
   Pencil,
-  SlidersHorizontal,
   Vibrate,
   Wifi,
 } from 'lucide-react';
@@ -47,7 +45,6 @@ interface PhonePreviewProps {
   onInspectAppTile: (app: AppDefinition) => void;
   onCycleAlertMode: () => void;
   onToggleMusic: (e?: React.MouseEvent) => void;
-  onOpenMobileStudio?: () => void;
 }
 
 export const PhonePreview: React.FC<PhonePreviewProps> = ({
@@ -74,7 +71,6 @@ export const PhonePreview: React.FC<PhonePreviewProps> = ({
   onInspectAppTile,
   onCycleAlertMode,
   onToggleMusic,
-  onOpenMobileStudio,
 }) => {
   const wallpaper = WALLPAPERS.find((w) => w.id === config.wallpaperId) ?? WALLPAPERS[0];
   const isLight = config.theme === 'light';
@@ -123,12 +119,12 @@ export const PhonePreview: React.FC<PhonePreviewProps> = ({
 
   const rowHeightPx =
     config.gridColumns === 3
-      ? 92
+      ? 108
       : config.gridColumns === 4
-      ? 72
+      ? 80
       : config.gridColumns === 5
-      ? 58
-      : 48;
+      ? 62
+      : 50;
 
   const gridColsClass =
     config.gridColumns === 3
@@ -262,7 +258,7 @@ export const PhonePreview: React.FC<PhonePreviewProps> = ({
             onTouchEnd={handleScreenTouchEnd}
           >
             {viewMode === 'start' ? (
-              <div className="h-full overflow-y-auto no-scrollbar touch-pan-y px-3.5 pt-3 pb-16">
+              <div className="h-full overflow-y-auto no-scrollbar touch-pan-y px-3.5 pt-3 pb-8">
                 {/* Live Tile Dense Grid */}
                 <div
                   className={`grid ${gridColsClass} grid-flow-dense`}
@@ -368,92 +364,6 @@ export const PhonePreview: React.FC<PhonePreviewProps> = ({
                 onOpenTileInspector={onInspectAppTile}
               />
             )}
-          </div>
-
-          {/* Mobile Thumb-Zone Action Strip + Gesture Pill */}
-          <div className="relative z-30 pb-2 pt-1.5 px-4 flex flex-col items-center gap-2">
-            {onOpenMobileStudio && (
-              <div className="lg:hidden w-full grid grid-cols-3 gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    onCloseApp();
-                    onChangeViewMode('start');
-                  }}
-                  className={`min-h-[44px] rounded-xl font-semibold flex items-center justify-center gap-1.5 backdrop-blur-md border ${
-                    viewMode === 'start' && !activeApp
-                      ? 'text-white border-transparent'
-                      : isLight
-                      ? 'bg-white/80 text-slate-800 border-slate-200'
-                      : 'bg-zinc-900/80 text-zinc-200 border-white/15'
-                  }`}
-                  style={{
-                    ...(viewMode === 'start' && !activeApp
-                      ? { backgroundColor: config.accentColor }
-                      : {}),
-                    fontSize: `${Math.round(12 * (config.fontScale ?? 1))}px`,
-                  }}
-                >
-                  <Grid size={14} />
-                  <span>Start</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    onCloseApp();
-                    onChangeViewMode('apps');
-                  }}
-                  className={`min-h-[44px] rounded-xl font-semibold flex items-center justify-center gap-1.5 backdrop-blur-md border ${
-                    viewMode === 'apps' && !activeApp
-                      ? 'text-white border-transparent'
-                      : isLight
-                      ? 'bg-white/80 text-slate-800 border-slate-200'
-                      : 'bg-zinc-900/80 text-zinc-200 border-white/15'
-                  }`}
-                  style={{
-                    ...(viewMode === 'apps' && !activeApp
-                      ? { backgroundColor: config.accentColor }
-                      : {}),
-                    fontSize: `${Math.round(12 * (config.fontScale ?? 1))}px`,
-                  }}
-                >
-                  <ArrowRight size={14} />
-                  <span>Apps</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={onOpenMobileStudio}
-                  className={`min-h-[44px] rounded-xl font-semibold flex items-center justify-center gap-1.5 backdrop-blur-md border ${
-                    isLight
-                      ? 'bg-white/80 text-slate-800 border-slate-200'
-                      : 'bg-zinc-900/80 text-zinc-200 border-white/15'
-                  }`}
-                  style={{
-                    fontSize: `${Math.round(12 * (config.fontScale ?? 1))}px`,
-                  }}
-                >
-                  <SlidersHorizontal size={14} />
-                  <span>Customize</span>
-                </button>
-              </div>
-            )}
-
-            {/* OxygenOS Home Gesture Pill (Desktop Frame Only) */}
-            <button
-              type="button"
-              aria-label="Home gesture bar"
-              onClick={() => {
-                onCloseApp();
-                onChangeViewMode('start');
-              }}
-              className="hidden lg:flex w-28 h-5 items-center justify-center cursor-pointer group"
-            >
-              <span
-                className={`block w-24 h-1 rounded-full transition-all group-hover:w-28 ${
-                  isLight ? 'bg-slate-900/45' : 'bg-white/50'
-                }`}
-              />
-            </button>
           </div>
         </div>
       </div>

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { ArrowDown, ArrowUp, Maximize2, Pause, Play, SlidersHorizontal, X } from 'lucide-react';
 import { TILE_MEDIA_ASSETS } from '../data/launcherDefaults';
 import type { AppDefinition, LauncherConfig, TileItem, TileSize } from '../types/launcher';
@@ -70,28 +70,6 @@ export const LiveTile: React.FC<LiveTileProps> = ({
   onMoveTile,
   onLongPressStart,
 }) => {
-  const [flipFace, setFlipFace] = useState(0);
-
-  const hasLiveFeed = tile.liveEnabled && app.liveFeedType !== 'none' && config.liveAnimation !== 'static';
-
-  useEffect(() => {
-    if (!hasLiveFeed) {
-      setFlipFace(0);
-      return;
-    }
-    const staggerDelay = (tile.order % 5) * 650;
-    let intervalId: number | undefined;
-    const timeoutId = window.setTimeout(() => {
-      intervalId = window.setInterval(() => {
-        setFlipFace((prev) => (prev + 1) % 2);
-      }, config.liveIntervalMs);
-    }, staggerDelay);
-
-    return () => {
-      window.clearTimeout(timeoutId);
-      if (intervalId) window.clearInterval(intervalId);
-    };
-  }, [hasLiveFeed, config.liveIntervalMs, tile.order]);
 
   const hasGlobalTileColor = config.tileColor && config.tileColor !== 'accent';
   const effectiveColor =
@@ -427,9 +405,19 @@ export const LiveTile: React.FC<LiveTileProps> = ({
     }
 
     // Default Standard Metro Icon Tile Face
+    const isPhoneOrMessages =
+      app.id === 'phone' ||
+      app.id === 'messages' ||
+      app.icon === 'phone' ||
+      app.icon === 'message' ||
+      app.liveFeedType === 'messages';
+    const hasCount = Boolean(effectiveBadge && effectiveBadge > 0);
+    const showInlineCount = isPhoneOrMessages && hasCount;
+    const showCornerBadge = !isPhoneOrMessages && hasCount;
+
     return (
       <div className="relative h-full w-full p-2 flex flex-col justify-between">
-        {effectiveBadge && effectiveBadge > 0 && (
+        {showCornerBadge && (
           <span
             className="absolute top-1.5 right-2 font-mono-tabular font-bold leading-none"
             style={{ color: textColor, fontSize: `${Math.round(11 * fontScale)}px` }}
@@ -440,8 +428,8 @@ export const LiveTile: React.FC<LiveTileProps> = ({
 
         <div
           className={`flex-1 flex items-center justify-center ${
-            isSmall ? '' : isWide ? 'pb-1' : 'pb-2'
-          }`}
+            showInlineCount ? (isSmall ? 'gap-1.5' : 'gap-2.5') : ''
+          } ${isSmall ? '' : isWide ? 'pb-1' : 'pb-2'}`}
         >
           {app.nativeIconBase64 && !tile.customIcon ? (
             <img
@@ -452,7 +440,7 @@ export const LiveTile: React.FC<LiveTileProps> = ({
                 width: `${Math.round(baseIconPx * config.iconScale * 1.25)}px`,
                 height: `${Math.round(baseIconPx * config.iconScale * 1.25)}px`,
               }}
-              className="object-contain rounded-lg"
+              className="object-contain rounded-lg shrink-0"
             />
           ) : (
             <IconRenderer
@@ -464,6 +452,18 @@ export const LiveTile: React.FC<LiveTileProps> = ({
               foregroundColor={textColor}
               baseSizePx={baseIconPx}
             />
+          )}
+
+          {showInlineCount && (
+            <span
+              className="font-mono-tabular font-light leading-none tracking-tight shrink-0"
+              style={{
+                color: textColor,
+                fontSize: `${Math.round((isSmall ? 16 : tile.size === '4x2' ? 28 : 24) * fontScale)}px`,
+              }}
+            >
+              {effectiveBadge}
+            </span>
           )}
         </div>
 
@@ -488,201 +488,11 @@ export const LiveTile: React.FC<LiveTileProps> = ({
     );
   };
 
-  const renderLiveBackFace = () => {
-    if (app.liveFeedType === 'messages') {
-      return (
-        <div className="h-full w-full p-2 flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span
-              className="font-semibold"
-              style={{ color: mutedTextColor, fontSize: `${Math.round(10 * fontScale)}px` }}
-            >
-              Alex Chen
-            </span>
-            <span
-              className="font-mono-tabular font-bold"
-              style={{ color: textColor, fontSize: `${Math.round(10 * fontScale)}px` }}
-            >
-              {effectiveBadge ?? 3}
-            </span>
-          </div>
-          <p
-            className="leading-snug line-clamp-2"
-            style={{ color: textColor, fontSize: `${Math.round(10 * fontScale)}px` }}
-          >
-            Sending the 15R RAW night shots now.
-          </p>
-        </div>
-      );
-    }
-
-    if (app.liveFeedType === 'mail') {
-      return (
-        <div className="h-full w-full p-2 flex flex-col justify-between">
-          <span
-            className="font-semibold truncate"
-            style={{ color: mutedTextColor, fontSize: `${Math.round(10 * fontScale)}px` }}
-          >
-            Inbox · {effectiveBadge ?? 5}
-          </span>
-          <p
-            className="leading-snug line-clamp-2"
-            style={{ color: textColor, fontSize: `${Math.round(10 * fontScale)}px` }}
-          >
-            OxygenOS Beta Build Ready for Review
-          </p>
-        </div>
-      );
-    }
-
-    if (app.liveFeedType === 'fitness') {
-      return (
-        <div className="h-full w-full p-2.5 flex flex-col justify-between">
-          <span
-            className="font-medium"
-            style={{ color: mutedTextColor, fontSize: `${Math.round(10 * fontScale)}px` }}
-          >
-            OHealth Today
-          </span>
-          <div className="flex items-baseline justify-between">
-            <span
-              className="font-mono-tabular font-bold"
-              style={{ color: textColor, fontSize: `${Math.round(16 * fontScale)}px` }}
-            >
-              7,420
-            </span>
-            <span
-              style={{ color: mutedTextColor, fontSize: `${Math.round(10 * fontScale)}px` }}
-            >
-              steps · 64 bpm
-            </span>
-          </div>
-        </div>
-      );
-    }
-
-    if (app.liveFeedType === 'clock-weather') {
-      return (
-        <div className="h-full w-full p-3.5 flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span
-              className="font-semibold"
-              style={{ color: textColor, fontSize: `${Math.round(12 * fontScale)}px` }}
-            >
-              3-Day Outlook
-            </span>
-            <span
-              style={{ color: mutedTextColor, fontSize: `${Math.round(10 * fontScale)}px` }}
-            >
-              Cupertino, CA
-            </span>
-          </div>
-          <div className="grid grid-cols-3 gap-2 text-center">
-            <div>
-              <div style={{ color: mutedTextColor, fontSize: `${Math.round(10 * fontScale)}px` }}>Wed</div>
-              <div className="font-mono-tabular font-semibold" style={{ color: textColor, fontSize: `${Math.round(12 * fontScale)}px` }}>22° / 13°</div>
-            </div>
-            <div>
-              <div style={{ color: mutedTextColor, fontSize: `${Math.round(10 * fontScale)}px` }}>Thu</div>
-              <div className="font-mono-tabular font-semibold" style={{ color: textColor, fontSize: `${Math.round(12 * fontScale)}px` }}>19° / 11°</div>
-            </div>
-            <div>
-              <div style={{ color: mutedTextColor, fontSize: `${Math.round(10 * fontScale)}px` }}>Fri</div>
-              <div className="font-mono-tabular font-semibold" style={{ color: textColor, fontSize: `${Math.round(12 * fontScale)}px` }}>24° / 14°</div>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    if (app.liveFeedType === 'photos') {
-      return (
-        <div className="h-full w-full p-2.5 flex flex-col justify-between">
-          <span
-            className="font-semibold uppercase tracking-wider"
-            style={{ color: mutedTextColor, fontSize: `${Math.round(10 * fontScale)}px` }}
-          >
-            Hasselblad RAW+
-          </span>
-          <div>
-            <div
-              className="font-semibold"
-              style={{ color: textColor, fontSize: `${Math.round(12 * fontScale)}px` }}
-            >
-              1,428 Photos
-            </div>
-            <div
-              style={{ color: mutedTextColor, fontSize: `${Math.round(10 * fontScale)}px` }}
-            >
-              Atrium Twilight · 50MP
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    if (app.liveFeedType === 'calendar') {
-      return (
-        <div className="h-full w-full p-2.5 flex flex-col justify-between">
-          <span
-            className="font-medium"
-            style={{ color: mutedTextColor, fontSize: `${Math.round(10 * fontScale)}px` }}
-          >
-            Later Today
-          </span>
-          <div>
-            <div
-              className="font-semibold truncate"
-              style={{ color: textColor, fontSize: `${Math.round(11 * fontScale)}px` }}
-            >
-              14:00 Kernel Perf Sync
-            </div>
-            <div
-              style={{ color: mutedTextColor, fontSize: `${Math.round(10 * fontScale)}px` }}
-            >
-              3 events remaining
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    if (app.liveFeedType === 'system-15r') {
-      return (
-        <div className="h-full w-full p-2.5 flex flex-col justify-between">
-          <span
-            className="font-medium"
-            style={{ color: mutedTextColor, fontSize: `${Math.round(10 * fontScale)}px` }}
-          >
-            Memory & Storage
-          </span>
-          <div className="flex items-baseline justify-between">
-            <span
-              className="font-mono-tabular font-bold"
-              style={{ color: textColor, fontSize: `${Math.round(14 * fontScale)}px` }}
-            >
-              16 GB RAM
-            </span>
-            <span
-              className="font-mono-tabular"
-              style={{ color: mutedTextColor, fontSize: `${Math.round(10 * fontScale)}px` }}
-            >
-              370 / 512 GB
-            </span>
-          </div>
-        </div>
-      );
-    }
-
-    return renderLiveFrontOrStatic();
-  };
-
   const spanClass = getGridSpanClass(tile.size, config.gridColumns);
-  const isFlipped = hasLiveFeed && flipFace === 1;
 
   return (
     <div
-      className={`${spanClass} tile-perspective relative select-none ${
+      className={`${spanClass} relative select-none ${
         isEditMode ? 'tile-editing' : ''
       }`}
       onPointerDown={handlePointerDown}
@@ -692,7 +502,7 @@ export const LiveTile: React.FC<LiveTileProps> = ({
       <div
         role="button"
         tabIndex={0}
-        aria-label={`${effectiveLabel} live tile`}
+        aria-label={`${effectiveLabel} tile`}
         onClick={() => {
           onSelectTile(tile.id);
           if (!isEditMode) {
@@ -715,31 +525,7 @@ export const LiveTile: React.FC<LiveTileProps> = ({
           border: isSelected ? `2px solid ${config.accentColor}` : borderStyle,
         }}
       >
-        {config.liveAnimation === 'flip' && hasLiveFeed ? (
-          <div
-            className="tile-flip-inner relative h-full w-full"
-            style={{
-              transform: isFlipped ? 'rotateX(180deg)' : 'rotateX(0deg)',
-            }}
-          >
-            <div className="tile-face absolute inset-0">{renderLiveFrontOrStatic()}</div>
-            <div className="tile-face-back absolute inset-0">{renderLiveBackFace()}</div>
-          </div>
-        ) : config.liveAnimation === 'slide' && hasLiveFeed ? (
-          <div className="relative h-full w-full overflow-hidden">
-            <div
-              className="h-[200%] w-full transition-transform duration-500 ease-out"
-              style={{
-                transform: isFlipped ? 'translateY(-50%)' : 'translateY(0%)',
-              }}
-            >
-              <div className="h-1/2 w-full">{renderLiveFrontOrStatic()}</div>
-              <div className="h-1/2 w-full">{renderLiveBackFace()}</div>
-            </div>
-          </div>
-        ) : (
-          renderLiveFrontOrStatic()
-        )}
+        {renderLiveFrontOrStatic()}
       </div>
 
       {/* Metro Edit Mode Floating Controls */}

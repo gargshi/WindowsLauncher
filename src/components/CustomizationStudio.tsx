@@ -28,7 +28,6 @@ import type {
   LabelVisibility,
   LauncherConfig,
   LauncherPreset,
-  LiveAnimationMode,
   StudioTab,
   TileItem,
   TileSize,
@@ -201,69 +200,35 @@ export const CustomizationStudio: React.FC<CustomizationStudioProps> = ({
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-medium text-slate-700 dark:text-zinc-300">
-                      Start Columns
-                    </span>
-                    <span className="font-mono-tabular text-slate-500 dark:text-zinc-400">
-                      {config.gridColumns} columns
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-4 gap-1.5">
-                    {([3, 4, 5, 6] as const).map((cols) => (
-                      <button
-                        key={cols}
-                        type="button"
-                        onClick={() => onUpdateConfig({ gridColumns: cols })}
-                        className={`min-h-[40px] rounded-xl text-xs font-mono-tabular font-semibold border transition-colors ${
-                          config.gridColumns === cols
-                            ? 'text-white border-transparent'
-                            : 'border-slate-200 dark:border-white/10 text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-white/5'
-                        }`}
-                        style={
-                          config.gridColumns === cols
-                            ? { backgroundColor: config.accentColor }
-                            : undefined
-                        }
-                      >
-                        {cols}
-                      </button>
-                    ))}
-                  </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-medium text-slate-700 dark:text-zinc-300">
+                    Start Columns
+                  </span>
+                  <span className="font-mono-tabular text-slate-500 dark:text-zinc-400">
+                    {config.gridColumns} columns
+                  </span>
                 </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-medium text-slate-700 dark:text-zinc-300">
-                      Live Tile Motion
-                    </span>
-                    <span className="font-mono-tabular text-slate-500 dark:text-zinc-400">
-                      {(config.liveIntervalMs / 1000).toFixed(1)}s cycle
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-1.5">
-                    {(['flip', 'slide', 'static'] as LiveAnimationMode[]).map((mode) => (
-                      <button
-                        key={mode}
-                        type="button"
-                        onClick={() => onUpdateConfig({ liveAnimation: mode })}
-                        className={`min-h-[40px] rounded-xl text-xs font-medium capitalize border transition-colors ${
-                          config.liveAnimation === mode
-                            ? 'text-white border-transparent'
-                            : 'border-slate-200 dark:border-white/10 text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-white/5'
-                        }`}
-                        style={
-                          config.liveAnimation === mode
-                            ? { backgroundColor: config.accentColor }
-                            : undefined
-                        }
-                      >
-                        {mode}
-                      </button>
-                    ))}
-                  </div>
+                <div className="grid grid-cols-4 gap-1.5">
+                  {([3, 4, 5, 6] as const).map((cols) => (
+                    <button
+                      key={cols}
+                      type="button"
+                      onClick={() => onUpdateConfig({ gridColumns: cols })}
+                      className={`min-h-[40px] rounded-xl text-xs font-mono-tabular font-semibold border transition-colors ${
+                        config.gridColumns === cols
+                          ? 'text-white border-transparent'
+                          : 'border-slate-200 dark:border-white/10 text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-white/5'
+                      }`}
+                      style={
+                        config.gridColumns === cols
+                          ? { backgroundColor: config.accentColor }
+                          : undefined
+                      }
+                    >
+                      {cols}
+                    </button>
+                  ))}
                 </div>
               </div>
 
@@ -985,41 +950,24 @@ export const CustomizationStudio: React.FC<CustomizationStudioProps> = ({
                     />
                   </label>
 
-                  <div className="space-y-1.5">
+                  <label className="space-y-1.5 block">
                     <span className="text-xs font-medium text-slate-700 dark:text-zinc-300 block">
-                      Live Tile Content Cycle
+                      Missed / Unread Count
                     </span>
-                    <button
-                      type="button"
-                      disabled={selectedApp.liveFeedType === 'none'}
-                      onClick={() =>
-                        onUpdateTile(selectedTile.id, { liveEnabled: !selectedTile.liveEnabled })
-                      }
-                      className={`w-full h-10 px-3 rounded-xl border text-xs font-semibold flex items-center justify-between transition-colors ${
-                        selectedApp.liveFeedType === 'none'
-                          ? 'opacity-50 cursor-not-allowed border-slate-200 dark:border-white/10 text-slate-500'
-                          : selectedTile.liveEnabled
-                          ? 'border-transparent text-white'
-                          : 'border-slate-200 dark:border-white/10 text-slate-700 dark:text-zinc-300'
-                      }`}
-                      style={
-                        selectedApp.liveFeedType !== 'none' && selectedTile.liveEnabled
-                          ? { backgroundColor: config.accentColor }
-                          : undefined
-                      }
-                    >
-                      <span>
-                        {selectedApp.liveFeedType === 'none'
-                          ? 'Static App Tile'
-                          : selectedTile.liveEnabled
-                          ? 'Live Feed Active'
-                          : 'Live Feed Paused'}
-                      </span>
-                      {selectedTile.liveEnabled && selectedApp.liveFeedType !== 'none' && (
-                        <Check size={14} />
-                      )}
-                    </button>
-                  </div>
+                    <input
+                      type="number"
+                      min={0}
+                      max={999}
+                      value={selectedTile.badgeCount ?? selectedApp.badgeCount ?? 0}
+                      onChange={(e) => {
+                        const val = Math.max(0, Math.min(999, Number(e.target.value) || 0));
+                        onUpdateTile(selectedTile.id, {
+                          badgeCount: val,
+                        });
+                      }}
+                      className="w-full h-10 px-3 rounded-xl text-xs font-mono-tabular border border-slate-200 dark:border-white/15 bg-white dark:bg-zinc-950 text-slate-900 dark:text-white outline-none focus:border-rose-500"
+                    />
+                  </label>
                 </div>
 
                 {/* Per-Tile Color Override */}
