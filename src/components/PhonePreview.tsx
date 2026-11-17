@@ -80,24 +80,45 @@ export const PhonePreview: React.FC<PhonePreviewProps> = ({
   const isLight = config.theme === 'light';
   const swipeStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
 
+  const evaluateSwipe = (endX: number, endY: number) => {
+    const start = swipeStartRef.current;
+    swipeStartRef.current = null;
+    if (!start || activeApp) return;
+    const dx = endX - start.x;
+    const dy = endY - start.y;
+    const dt = Date.now() - start.time;
+    if (dt < 800 && Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.15) {
+      if (viewMode === 'start' && dx < 0) {
+        onChangeViewMode('apps');
+      } else if (viewMode === 'apps' && (dx < 0 || dx > 0)) {
+        onChangeViewMode('start');
+      }
+    }
+  };
+
   const handleScreenPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType === 'touch') return;
     swipeStartRef.current = { x: e.clientX, y: e.clientY, time: Date.now() };
   };
 
   const handleScreenPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
-    const start = swipeStartRef.current;
-    swipeStartRef.current = null;
-    if (!start || activeApp) return;
-    const dx = e.clientX - start.x;
-    const dy = e.clientY - start.y;
-    const dt = Date.now() - start.time;
-    if (dt < 750 && Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy) * 1.2) {
-      if (dx > 0 && viewMode === 'start') {
-        onChangeViewMode('apps');
-      } else if (dx < 0 && viewMode === 'apps') {
-        onChangeViewMode('start');
-      }
+    if (e.pointerType === 'touch') return;
+    evaluateSwipe(e.clientX, e.clientY);
+  };
+
+  const handleScreenTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (e.touches.length !== 1) {
+      swipeStartRef.current = null;
+      return;
     }
+    const touch = e.touches[0];
+    swipeStartRef.current = { x: touch.clientX, y: touch.clientY, time: Date.now() };
+  };
+
+  const handleScreenTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
+    const touch = e.changedTouches[0];
+    if (!touch) return;
+    evaluateSwipe(touch.clientX, touch.clientY);
   };
 
   const rowHeightPx =
@@ -237,9 +258,11 @@ export const PhonePreview: React.FC<PhonePreviewProps> = ({
             className="relative z-10 flex-1 overflow-hidden touch-pan-y"
             onPointerDown={handleScreenPointerDown}
             onPointerUp={handleScreenPointerUp}
+            onTouchStart={handleScreenTouchStart}
+            onTouchEnd={handleScreenTouchEnd}
           >
             {viewMode === 'start' ? (
-              <div className="h-full overflow-y-auto no-scrollbar px-3.5 pt-3 pb-16">
+              <div className="h-full overflow-y-auto no-scrollbar touch-pan-y px-3.5 pt-3 pb-16">
                 {/* Live Tile Dense Grid */}
                 <div
                   className={`grid ${gridColsClass} grid-flow-dense`}

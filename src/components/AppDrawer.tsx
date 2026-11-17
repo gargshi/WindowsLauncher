@@ -111,7 +111,7 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
       </div>
 
       {/* Alphabetical List */}
-      <div className="flex-1 overflow-y-auto no-scrollbar px-4 pb-8 space-y-4">
+      <div className="flex-1 overflow-y-auto no-scrollbar touch-pan-y px-4 pb-8 space-y-4">
         {groupedApps.length === 0 ? (
           <div className="py-16 text-center">
             <p className={`text-sm font-medium ${isLight ? 'text-slate-700' : 'text-zinc-300'}`}>
