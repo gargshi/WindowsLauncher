@@ -26,11 +26,26 @@ import {
   isAndroidNativeLauncher,
   launchNativeAndroidApp,
   openAndroidDefaultHomeSettings,
+  pickNativeBackgroundImage,
 } from './utils/androidLauncherBridge';
 
 const STORAGE_KEY = 'oxygentile_15r_state_v4';
+const CUSTOM_BG_STORAGE_KEY = 'oxygentile_custom_bg_v1';
 
 const TILE_SIZE_CYCLE: TileSize[] = ['1x1', '2x1', '2x2', '4x2'];
+const CORE_APP_IDS = new Set(APP_CATALOG.map((a) => a.id));
+
+function isSupportedAppId(appId: string): boolean {
+  return CORE_APP_IDS.has(appId) || appId.startsWith('android-');
+}
+
+function loadCustomBackground(): string | null {
+  try {
+    return localStorage.getItem(CUSTOM_BG_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
 
 function loadStoredState(): { config: LauncherConfig; tiles: TileItem[] } {
   try {
@@ -39,9 +54,12 @@ function loadStoredState(): { config: LauncherConfig; tiles: TileItem[] } {
     const parsed = JSON.parse(raw);
     const mergedConfig: LauncherConfig = { ...DEFAULT_CONFIG, ...(parsed.config || {}) };
     mergedConfig.tileRadius = Math.min(50, Math.max(0, Number(mergedConfig.tileRadius ?? DEFAULT_CONFIG.tileRadius)));
+    const storedTiles: TileItem[] = Array.isArray(parsed.tiles)
+      ? parsed.tiles.filter((t: TileItem) => t && isSupportedAppId(t.appId))
+      : [];
     return {
       config: mergedConfig,
-      tiles: Array.isArray(parsed.tiles) && parsed.tiles.length > 0 ? parsed.tiles : DEFAULT_TILES,
+      tiles: storedTiles.length > 0 ? storedTiles : DEFAULT_TILES,
     };
   } catch {
     return { config: DEFAULT_CONFIG, tiles: DEFAULT_TILES };
@@ -52,6 +70,9 @@ export default function App() {
   const initial = useMemo(() => loadStoredState(), []);
   const [config, setConfig] = useState<LauncherConfig>(initial.config);
   const [tiles, setTiles] = useState<TileItem[]>(initial.tiles);
+  const [customWallpaperImage, setCustomWallpaperImage] = useState<string | null>(() =>
+    loadCustomBackground()
+  );
 
   const [viewMode, setViewMode] = useState<PhoneViewMode>('start');
   const [studioTab, setStudioTab] = useState<StudioTab>('layout');
@@ -60,7 +81,6 @@ export default function App() {
   const [activeApp, setActiveApp] = useState<AppDefinition | null>(null);
   const [alertMode, setAlertMode] = useState<AlertMode>('ring');
   const [showAlertToast, setShowAlertToast] = useState(false);
-  const [isMusicPlaying, setIsMusicPlaying] = useState(true);
   const [mobileStudioOpen, setMobileStudioOpen] = useState(false);
   const [now, setNow] = useState(() => new Date());
   const [apps, setApps] = useState<AppDefinition[]>(APP_CATALOG);
@@ -127,6 +147,19 @@ export default function App() {
     }
   }, [config, tiles]);
 
+  // Persist custom Start background image separately
+  useEffect(() => {
+    try {
+      if (customWallpaperImage) {
+        localStorage.setItem(CUSTOM_BG_STORAGE_KEY, customWallpaperImage);
+      } else {
+        localStorage.removeItem(CUSTOM_BG_STORAGE_KEY);
+      }
+    } catch {
+      // Ignore storage quota errors
+    }
+  }, [customWallpaperImage]);
+
   // Live clock tick every 15 seconds
   useEffect(() => {
     const id = window.setInterval(() => setNow(new Date()), 15000);
@@ -135,6 +168,36 @@ export default function App() {
 
   const handleUpdateConfig = (partial: Partial<LauncherConfig>) => {
     setConfig((prev) => ({ ...prev, ...partial }));
+  };
+
+  const handleSelectCustomBackgroundImage = (dataUrl: string) => {
+    setCustomWallpaperImage(dataUrl);
+    setConfig((prev) => ({ ...prev, wallpaperId: 'custom-image' }));
+  };
+
+  const handleClearCustomBackgroundImage = () => {
+    setCustomWallpaperImage(null);
+    setConfig((prev) =>
+      prev.wallpaperId === 'custom-image'
+        ? { ...prev, wallpaperId: DEFAULT_CONFIG.wallpaperId }
+        : prev
+    );
+  };
+
+  const handlePickNativeBackgroundImage = async (): Promise<{
+    handled: boolean;
+    picked: boolean;
+  }> => {
+    if (!isNativeAndroid) return { handled: false, picked: false };
+    const res = await pickNativeBackgroundImage();
+    if (res.cancelled) {
+      return { handled: true, picked: false };
+    }
+    if (res.dataUrl) {
+      handleSelectCustomBackgroundImage(res.dataUrl);
+      return { handled: true, picked: true };
+    }
+    return { handled: false, picked: false };
   };
 
   const handleUpdateTile = (tileId: string, partial: Partial<TileItem>) => {
@@ -229,6 +292,7 @@ export default function App() {
   const handleResetDefaults = () => {
     setConfig(DEFAULT_CONFIG);
     setTiles(DEFAULT_TILES);
+    setCustomWallpaperImage(null);
     setSelectedTileId(DEFAULT_TILES[0].id);
     setIsEditMode(false);
     setActiveApp(null);
@@ -244,8 +308,10 @@ export default function App() {
         setConfig({ ...DEFAULT_CONFIG, ...parsed.config });
       }
       if (Array.isArray(parsed.tiles) && parsed.tiles.length > 0) {
-        setTiles(parsed.tiles);
-        setSelectedTileId(parsed.tiles[0].id);
+        const validTiles = parsed.tiles.filter((t: TileItem) => t && isSupportedAppId(t.appId));
+        const finalTiles = validTiles.length > 0 ? validTiles : DEFAULT_TILES;
+        setTiles(finalTiles);
+        setSelectedTileId(finalTiles[0].id);
       }
       return { ok: true };
     } catch {
@@ -404,7 +470,7 @@ export default function App() {
             alertMode={alertMode}
             showAlertToast={showAlertToast}
             now={now}
-            isMusicPlaying={isMusicPlaying}
+            customWallpaperImage={customWallpaperImage}
             onChangeViewMode={setViewMode}
             onSelectTile={handleSelectTile}
             onToggleEditMode={() => setIsEditMode((v) => !v)}
@@ -416,7 +482,6 @@ export default function App() {
             onTogglePinApp={handleTogglePinApp}
             onInspectAppTile={handleInspectAppTile}
             onCycleAlertMode={handleCycleAlertMode}
-            onToggleMusic={() => setIsMusicPlaying((p) => !p)}
           />
         </section>
 
@@ -446,6 +511,7 @@ export default function App() {
               selectedTile={selectedTile}
               selectedApp={selectedApp}
               tiles={tiles}
+              customWallpaperImage={customWallpaperImage}
               onChangeTab={setStudioTab}
               onUpdateConfig={handleUpdateConfig}
               onUpdateTile={handleUpdateTile}
@@ -455,6 +521,9 @@ export default function App() {
               onResetDefaults={handleResetDefaults}
               onImportConfigJson={handleImportConfigJson}
               onApplyTileColorToAll={handleApplyTileColorToAll}
+              onSelectCustomBackgroundImage={handleSelectCustomBackgroundImage}
+              onClearCustomBackgroundImage={handleClearCustomBackgroundImage}
+              onPickNativeBackgroundImage={handlePickNativeBackgroundImage}
               canInstallPWA={isInstallable}
               isPWAInstalled={isInstalled}
               onInstallPWA={() => void install()}
@@ -490,6 +559,7 @@ export default function App() {
                 selectedTile={selectedTile}
                 selectedApp={selectedApp}
                 tiles={tiles}
+                customWallpaperImage={customWallpaperImage}
                 onChangeTab={setStudioTab}
                 onUpdateConfig={handleUpdateConfig}
                 onUpdateTile={handleUpdateTile}
@@ -499,6 +569,9 @@ export default function App() {
                 onResetDefaults={handleResetDefaults}
                 onImportConfigJson={handleImportConfigJson}
                 onApplyTileColorToAll={handleApplyTileColorToAll}
+                onSelectCustomBackgroundImage={handleSelectCustomBackgroundImage}
+                onClearCustomBackgroundImage={handleClearCustomBackgroundImage}
+                onPickNativeBackgroundImage={handlePickNativeBackgroundImage}
                 canInstallPWA={isInstallable}
                 isPWAInstalled={isInstalled}
                 onInstallPWA={() => void install()}

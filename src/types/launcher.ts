@@ -125,6 +125,7 @@ export interface LauncherConfig {
   labelAlignment: LabelAlignment;
   fontScale: number; // 0.8 to 1.4
   wallpaperId: string;
+  customWallpaperColor?: string;
   showStatusBar: boolean;
   parallaxDepth: boolean;
   preferredDialerPackage: string;

@@ -101,23 +101,32 @@ jobs:
           cat <<'JAVA' > android/app/src/main/java/com/oxygentile/launcher/LauncherBridgePlugin.java
           package com.oxygentile.launcher;
 
+          import android.app.Activity;
           import android.content.Intent;
           import android.content.pm.PackageManager;
           import android.content.pm.ResolveInfo;
           import android.graphics.Bitmap;
+          import android.graphics.BitmapFactory;
           import android.graphics.Canvas;
+          import android.graphics.Matrix;
           import android.graphics.drawable.Drawable;
+          import android.media.ExifInterface;
+          import android.net.Uri;
           import android.os.Build;
           import android.provider.CallLog;
+          import android.provider.MediaStore;
           import android.provider.Settings;
           import android.util.Base64;
+          import androidx.activity.result.ActivityResult;
           import com.getcapacitor.JSArray;
           import com.getcapacitor.JSObject;
           import com.getcapacitor.Plugin;
           import com.getcapacitor.PluginCall;
           import com.getcapacitor.PluginMethod;
+          import com.getcapacitor.annotation.ActivityCallback;
           import com.getcapacitor.annotation.CapacitorPlugin;
           import java.io.ByteArrayOutputStream;
+          import java.io.InputStream;
           import java.util.ArrayList;
           import java.util.LinkedHashMap;
           import java.util.List;
@@ -137,6 +146,127 @@ jobs:
                   } catch (Exception ignored) {
                       return null;
                   }
+              }
+
+              @PluginMethod
+              public void pickBackgroundImage(PluginCall call) {
+                  Intent intent;
+                  if (Build.VERSION.SDK_INT >= 33) {
+                      intent = new Intent(MediaStore.ACTION_PICK_IMAGES);
+                      intent.setType("image/*");
+                      if (intent.resolveActivity(getContext().getPackageManager()) == null) {
+                          Intent fallback = new Intent(Intent.ACTION_GET_CONTENT);
+                          fallback.setType("image/*");
+                          fallback.addCategory(Intent.CATEGORY_OPENABLE);
+                          intent = Intent.createChooser(fallback, "Select Start Background");
+                      }
+                  } else {
+                      Intent getIntent = new Intent(Intent.ACTION_GET_CONTENT);
+                      getIntent.setType("image/*");
+                      getIntent.addCategory(Intent.CATEGORY_OPENABLE);
+                      intent = Intent.createChooser(getIntent, "Select Start Background");
+                  }
+                  startActivityForResult(call, intent, "backgroundImageResult");
+              }
+
+              @ActivityCallback
+              private void backgroundImageResult(PluginCall call, ActivityResult result) {
+                  if (call == null) return;
+                  if (result.getResultCode() != Activity.RESULT_OK || result.getData() == null || result.getData().getData() == null) {
+                      JSObject res = new JSObject();
+                      res.put("cancelled", true);
+                      call.resolve(res);
+                      return;
+                  }
+                  Uri uri = result.getData().getData();
+                  try {
+                      String dataUrl = decodeAndScaleUri(uri, 1440);
+                      if (dataUrl == null) {
+                          call.reject("Unable to read selected image");
+                          return;
+                      }
+                      JSObject res = new JSObject();
+                      res.put("dataUrl", dataUrl);
+                      call.resolve(res);
+                  } catch (Exception e) {
+                      call.reject("Failed to process image: " + e.getMessage());
+                  }
+              }
+
+              private String decodeAndScaleUri(Uri uri, int maxDim) throws Exception {
+                  BitmapFactory.Options bounds = new BitmapFactory.Options();
+                  bounds.inJustDecodeBounds = true;
+                  try (InputStream is = getContext().getContentResolver().openInputStream(uri)) {
+                      if (is == null) return null;
+                      BitmapFactory.decodeStream(is, null, bounds);
+                  }
+
+                  int sampleSize = 1;
+                  int w = bounds.outWidth;
+                  int h = bounds.outHeight;
+                  while (w / sampleSize > maxDim * 2 || h / sampleSize > maxDim * 2) {
+                      sampleSize *= 2;
+                  }
+
+                  int orientation = ExifInterface.ORIENTATION_NORMAL;
+                  if (Build.VERSION.SDK_INT >= 24) {
+                      try (InputStream exifStream = getContext().getContentResolver().openInputStream(uri)) {
+                          if (exifStream != null) {
+                              ExifInterface exif = new ExifInterface(exifStream);
+                              orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
+                          }
+                      } catch (Exception ignored) {}
+                  }
+
+                  BitmapFactory.Options opts = new BitmapFactory.Options();
+                  opts.inSampleSize = sampleSize;
+                  Bitmap decoded;
+                  try (InputStream decodeStream = getContext().getContentResolver().openInputStream(uri)) {
+                      if (decodeStream == null) return null;
+                      decoded = BitmapFactory.decodeStream(decodeStream, null, opts);
+                  }
+                  if (decoded == null) return null;
+
+                  Matrix matrix = new Matrix();
+                  switch (orientation) {
+                      case ExifInterface.ORIENTATION_ROTATE_90:
+                          matrix.postRotate(90);
+                          break;
+                      case ExifInterface.ORIENTATION_ROTATE_180:
+                          matrix.postRotate(180);
+                          break;
+                      case ExifInterface.ORIENTATION_ROTATE_270:
+                          matrix.postRotate(270);
+                          break;
+                      case ExifInterface.ORIENTATION_FLIP_HORIZONTAL:
+                          matrix.preScale(-1, 1);
+                          break;
+                      case ExifInterface.ORIENTATION_FLIP_VERTICAL:
+                          matrix.preScale(1, -1);
+                          break;
+                      default:
+                          break;
+                  }
+
+                  int bw = decoded.getWidth();
+                  int bh = decoded.getHeight();
+                  int maxEdge = Math.max(bw, bh);
+                  if (maxEdge > maxDim) {
+                      float scale = (float) maxDim / (float) maxEdge;
+                      matrix.postScale(scale, scale);
+                  }
+
+                  Bitmap finalBmp = matrix.isIdentity()
+                      ? decoded
+                      : Bitmap.createBitmap(decoded, 0, 0, bw, bh, matrix, true);
+                  if (finalBmp != decoded) {
+                      decoded.recycle();
+                  }
+
+                  ByteArrayOutputStream out = new ByteArrayOutputStream();
+                  finalBmp.compress(Bitmap.CompressFormat.JPEG, 82, out);
+                  finalBmp.recycle();
+                  return "data:image/jpeg;base64," + Base64.encodeToString(out.toByteArray(), Base64.NO_WRAP);
               }
 
               @PluginMethod

@@ -11,6 +11,7 @@ interface LauncherBridgePlugin {
   getCallingApps: () => Promise<{ apps: CallingAppOption[] }>;
   launchApp: (options: { packageName: string; preferRecents?: boolean }) => Promise<void>;
   openHomeSettings: () => Promise<void>;
+  pickBackgroundImage?: () => Promise<{ dataUrl?: string; cancelled?: boolean }>;
 }
 
 interface CapacitorWindow extends Window {
@@ -88,5 +89,18 @@ export async function openAndroidDefaultHomeSettings(): Promise<boolean> {
     return true;
   } catch {
     return false;
+  }
+}
+
+export async function pickNativeBackgroundImage(): Promise<{ dataUrl: string | null; cancelled?: boolean }> {
+  if (!isAndroidNativeLauncher()) return { dataUrl: null };
+  try {
+    const bridge = (window as CapacitorWindow).Capacitor?.Plugins?.LauncherBridge;
+    if (!bridge?.pickBackgroundImage) return { dataUrl: null };
+    const res = await bridge.pickBackgroundImage();
+    if (res?.cancelled) return { dataUrl: null, cancelled: true };
+    return { dataUrl: res?.dataUrl ?? null };
+  } catch {
+    return { dataUrl: null };
   }
 }

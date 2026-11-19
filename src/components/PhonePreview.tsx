@@ -32,7 +32,7 @@ interface PhonePreviewProps {
   alertMode: AlertMode;
   showAlertToast: boolean;
   now: Date;
-  isMusicPlaying: boolean;
+  customWallpaperImage: string | null;
   onChangeViewMode: (mode: PhoneViewMode) => void;
   onSelectTile: (tileId: string) => void;
   onToggleEditMode: () => void;
@@ -44,7 +44,6 @@ interface PhonePreviewProps {
   onTogglePinApp: (app: AppDefinition) => void;
   onInspectAppTile: (app: AppDefinition) => void;
   onCycleAlertMode: () => void;
-  onToggleMusic: (e?: React.MouseEvent) => void;
 }
 
 export const PhonePreview: React.FC<PhonePreviewProps> = ({
@@ -58,7 +57,7 @@ export const PhonePreview: React.FC<PhonePreviewProps> = ({
   alertMode,
   showAlertToast,
   now,
-  isMusicPlaying,
+  customWallpaperImage,
   onChangeViewMode,
   onSelectTile,
   onToggleEditMode,
@@ -70,7 +69,6 @@ export const PhonePreview: React.FC<PhonePreviewProps> = ({
   onTogglePinApp,
   onInspectAppTile,
   onCycleAlertMode,
-  onToggleMusic,
 }) => {
   const wallpaper = WALLPAPERS.find((w) => w.id === config.wallpaperId) ?? WALLPAPERS[0];
   const isLight = config.theme === 'light';
@@ -145,7 +143,17 @@ export const PhonePreview: React.FC<PhonePreviewProps> = ({
   });
 
   const wallpaperStyle: React.CSSProperties =
-    wallpaper.kind === 'image'
+    config.wallpaperId === 'custom-image' && customWallpaperImage
+      ? {
+          backgroundImage: `url(${customWallpaperImage})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }
+      : config.wallpaperId === 'custom-color'
+      ? {
+          background: config.customWallpaperColor || '#000000',
+        }
+      : wallpaper.kind === 'image'
       ? {
           backgroundImage: `url(${wallpaper.value})`,
           backgroundSize: 'cover',
@@ -278,12 +286,6 @@ export const PhonePreview: React.FC<PhonePreviewProps> = ({
                         config={config}
                         isSelected={selectedTileId === tile.id}
                         isEditMode={isEditMode}
-                        now={now}
-                        isMusicPlaying={isMusicPlaying}
-                        onToggleMusic={(e) => {
-                          e.stopPropagation();
-                          onToggleMusic(e);
-                        }}
                         onLaunchApp={onLaunchApp}
                         onSelectTile={onSelectTile}
                         onCycleSize={onCycleTileSize}
@@ -357,8 +359,6 @@ export const PhonePreview: React.FC<PhonePreviewProps> = ({
                 config={config}
                 now={now}
                 isPinned={pinnedAppIds.has(activeApp.id)}
-                isMusicPlaying={isMusicPlaying}
-                onToggleMusic={() => onToggleMusic()}
                 onClose={onCloseApp}
                 onTogglePin={onTogglePinApp}
                 onOpenTileInspector={onInspectAppTile}

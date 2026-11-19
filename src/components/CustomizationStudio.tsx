@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   Check,
   Copy,
   Download,
   Grid,
+  Image as ImageIcon,
   Layers,
   Moon,
   Palette,
@@ -14,6 +15,7 @@ import {
   Sun,
   Trash2,
   Upload,
+  X,
 } from 'lucide-react';
 import {
   ACCENT_SWATCHES,
@@ -43,6 +45,7 @@ interface CustomizationStudioProps {
   selectedTile: TileItem | null;
   selectedApp: AppDefinition | null;
   tiles: TileItem[];
+  customWallpaperImage: string | null;
   onChangeTab: (tab: StudioTab) => void;
   onUpdateConfig: (partial: Partial<LauncherConfig>) => void;
   onUpdateTile: (tileId: string, partial: Partial<TileItem>) => void;
@@ -52,6 +55,9 @@ interface CustomizationStudioProps {
   onResetDefaults: () => void;
   onImportConfigJson: (jsonStr: string) => { ok: boolean; error?: string };
   onApplyTileColorToAll: (color: string) => void;
+  onSelectCustomBackgroundImage: (dataUrl: string) => void;
+  onClearCustomBackgroundImage: () => void;
+  onPickNativeBackgroundImage: () => Promise<{ handled: boolean; picked: boolean }>;
   canInstallPWA: boolean;
   isPWAInstalled: boolean;
   onInstallPWA: () => void;
@@ -60,12 +66,47 @@ interface CustomizationStudioProps {
   callingApps: CallingAppOption[];
 }
 
+function isLightHexColor(hex: string): boolean {
+  const clean = hex.replace('#', '');
+  if (clean.length !== 6) return false;
+  const r = parseInt(clean.substring(0, 2), 16);
+  const g = parseInt(clean.substring(2, 4), 16);
+  const b = parseInt(clean.substring(4, 6), 16);
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.62;
+}
+
+async function resizeFileToJpegDataUrl(file: File, maxDim = 1440): Promise<string> {
+  const objectUrl = URL.createObjectURL(file);
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const el = new Image();
+      el.onload = () => resolve(el);
+      el.onerror = () => reject(new Error('Failed to load image'));
+      el.src = objectUrl;
+    });
+    const maxEdge = Math.max(img.naturalWidth || img.width, img.naturalHeight || img.height);
+    const scale = maxEdge > maxDim ? maxDim / maxEdge : 1;
+    const targetW = Math.max(1, Math.round((img.naturalWidth || img.width) * scale));
+    const targetH = Math.max(1, Math.round((img.naturalHeight || img.height) * scale));
+    const canvas = document.createElement('canvas');
+    canvas.width = targetW;
+    canvas.height = targetH;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Canvas unavailable');
+    ctx.drawImage(img, 0, 0, targetW, targetH);
+    return canvas.toDataURL('image/jpeg', 0.82);
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
 export const CustomizationStudio: React.FC<CustomizationStudioProps> = ({
   config,
   activeTab,
   selectedTile,
   selectedApp,
   tiles,
+  customWallpaperImage,
   onChangeTab,
   onUpdateConfig,
   onUpdateTile,
@@ -75,6 +116,9 @@ export const CustomizationStudio: React.FC<CustomizationStudioProps> = ({
   onResetDefaults,
   onImportConfigJson,
   onApplyTileColorToAll,
+  onSelectCustomBackgroundImage,
+  onClearCustomBackgroundImage,
+  onPickNativeBackgroundImage,
   canInstallPWA,
   isPWAInstalled,
   onInstallPWA,
@@ -84,10 +128,44 @@ export const CustomizationStudio: React.FC<CustomizationStudioProps> = ({
 }) => {
   const [importText, setImportText] = useState('');
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [isPickingBg, setIsPickingBg] = useState(false);
+  const bgFileInputRef = useRef<HTMLInputElement | null>(null);
 
   const showTempMessage = (msg: string) => {
     setStatusMessage(msg);
     window.setTimeout(() => setStatusMessage(null), 2600);
+  };
+
+  const handleChooseCustomPhoto = async () => {
+    if (isPickingBg) return;
+    setIsPickingBg(true);
+    try {
+      if (isNativeAndroid) {
+        const res = await onPickNativeBackgroundImage();
+        if (res.handled) {
+          if (res.picked) {
+            showTempMessage('Custom Start background photo applied.');
+          }
+          return;
+        }
+      }
+      bgFileInputRef.current?.click();
+    } finally {
+      setIsPickingBg(false);
+    }
+  };
+
+  const handleBackgroundFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    try {
+      const dataUrl = await resizeFileToJpegDataUrl(file, 1440);
+      onSelectCustomBackgroundImage(dataUrl);
+      showTempMessage('Custom Start background photo applied.');
+    } catch {
+      showTempMessage('Could not load that image. Try a JPEG or PNG photo.');
+    }
   };
 
   const handleCopyJson = async () => {
@@ -498,12 +576,120 @@ export const CustomizationStudio: React.FC<CustomizationStudioProps> = ({
 
             <hr className="border-slate-200 dark:border-white/10" />
 
-            {/* Wallpaper Canvas */}
-            <section className="space-y-3">
-              <h2 className="text-sm font-semibold text-slate-900 dark:text-white">
-                AMOLED Wallpaper Canvas
-              </h2>
+            {/* Start Screen Background */}
+            <section className="space-y-4">
+              <div className="flex items-start justify-between gap-3 flex-wrap">
+                <div>
+                  <h2 className="text-sm font-semibold text-slate-900 dark:text-white">
+                    Start Screen Background
+                  </h2>
+                  <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
+                    Pick your own photo or custom color, or choose a built-in canvas. Uses Android System Photo Picker (no storage permissions).
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 flex-wrap">
+                  <input
+                    ref={bgFileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleBackgroundFileChange}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    disabled={isPickingBg}
+                    onClick={() => void handleChooseCustomPhoto()}
+                    className="min-h-[38px] px-3.5 rounded-xl text-xs font-semibold text-white flex items-center gap-1.5 transition-opacity hover:opacity-90 disabled:opacity-50"
+                    style={{ backgroundColor: config.accentColor }}
+                  >
+                    <ImageIcon size={14} />
+                    <span>{isPickingBg ? 'Opening...' : 'Choose Photo'}</span>
+                  </button>
+
+                  <label className="min-h-[38px] px-3 rounded-xl border border-slate-200 dark:border-white/15 flex items-center gap-2 text-xs font-medium text-slate-700 dark:text-zinc-200 cursor-pointer hover:bg-slate-50 dark:hover:bg-white/5">
+                    <input
+                      type="color"
+                      value={config.customWallpaperColor || '#09090B'}
+                      onChange={(e) => {
+                        const hex = e.target.value;
+                        onUpdateConfig({
+                          wallpaperId: 'custom-color',
+                          customWallpaperColor: hex,
+                          theme: isLightHexColor(hex) ? 'light' : 'dark',
+                        });
+                      }}
+                      aria-label="Pick custom Start background color"
+                      className="w-5 h-5 rounded border-0 bg-transparent cursor-pointer"
+                    />
+                    <span>Custom Color</span>
+                  </label>
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+                {customWallpaperImage && (
+                  <div
+                    className={`relative rounded-xl overflow-hidden border transition-all ${
+                      config.wallpaperId === 'custom-image'
+                        ? 'ring-2 ring-offset-2 ring-offset-white dark:ring-offset-zinc-900 border-transparent'
+                        : 'border-slate-200 dark:border-white/10 hover:border-slate-400 dark:hover:border-white/30'
+                    }`}
+                    style={
+                      config.wallpaperId === 'custom-image'
+                        ? ({ '--tw-ring-color': config.accentColor } as React.CSSProperties)
+                        : undefined
+                    }
+                  >
+                    <button
+                      type="button"
+                      onClick={() => onUpdateConfig({ wallpaperId: 'custom-image' })}
+                      className="w-full text-left"
+                    >
+                      <div
+                        className="h-16 w-full"
+                        style={{
+                          backgroundImage: `url(${customWallpaperImage})`,
+                          backgroundSize: 'cover',
+                          backgroundPosition: 'center',
+                        }}
+                      />
+                      <div className="px-2 py-1.5 bg-slate-50 dark:bg-zinc-950 text-[11px] font-medium text-slate-800 dark:text-zinc-200 truncate">
+                        My Photo
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Remove custom photo"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onClearCustomBackgroundImage();
+                        showTempMessage('Removed custom Start photo.');
+                      }}
+                      className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-black/70 text-white flex items-center justify-center hover:bg-rose-600 transition-colors"
+                    >
+                      <X size={11} />
+                    </button>
+                  </div>
+                )}
+
+                {config.wallpaperId === 'custom-color' && (
+                  <button
+                    type="button"
+                    onClick={() => onUpdateConfig({ wallpaperId: 'custom-color' })}
+                    className="group text-left rounded-xl overflow-hidden border ring-2 ring-offset-2 ring-offset-white dark:ring-offset-zinc-900 border-transparent transition-all"
+                    style={{ '--tw-ring-color': config.accentColor } as React.CSSProperties}
+                  >
+                    <div
+                      className="h-16 w-full"
+                      style={{ background: config.customWallpaperColor || '#09090B' }}
+                    />
+                    <div className="px-2 py-1.5 bg-slate-50 dark:bg-zinc-950 text-[11px] font-mono-tabular font-medium text-slate-800 dark:text-zinc-200 truncate">
+                      {config.customWallpaperColor || '#09090B'}
+                    </div>
+                  </button>
+                )}
+
                 {WALLPAPERS.map((wp) => {
                   const active = config.wallpaperId === wp.id;
                   return (
