@@ -388,9 +388,11 @@ export const LiveTile: React.FC<LiveTileProps> = ({
               e.stopPropagation();
               onUnpinTile(tile.id);
             }}
-            className="pointer-events-auto absolute -top-1.5 -left-1.5 w-6 h-6 rounded-full bg-zinc-900 text-white border border-white/25 shadow-md flex items-center justify-center hover:bg-rose-600 transition-colors"
+            className={`pointer-events-auto absolute rounded-full bg-zinc-950/95 text-white border-2 border-white/45 shadow-lg backdrop-blur-sm flex items-center justify-center hover:bg-rose-600 active:scale-90 transition-all ${
+              isSmall ? '-top-1.5 -left-1.5 w-8 h-8' : 'top-1.5 left-1.5 w-10 h-10'
+            }`}
           >
-            <X size={12} />
+            <X size={isSmall ? 14 : 16} strokeWidth={2.4} />
           </button>
 
           <button
@@ -400,12 +402,18 @@ export const LiveTile: React.FC<LiveTileProps> = ({
               e.stopPropagation();
               onInspectTile(tile.id);
             }}
-            className="pointer-events-auto absolute -top-1.5 -right-1.5 w-6 h-6 rounded-full bg-zinc-900 text-white border border-white/25 shadow-md flex items-center justify-center hover:bg-zinc-700 transition-colors"
+            className={`pointer-events-auto absolute rounded-full bg-zinc-950/95 text-white border-2 border-white/45 shadow-lg backdrop-blur-sm flex items-center justify-center hover:bg-zinc-800 active:scale-90 transition-all ${
+              isSmall ? '-top-1.5 -right-1.5 w-8 h-8' : 'top-1.5 right-1.5 w-10 h-10'
+            }`}
           >
-            <SlidersHorizontal size={11} />
+            <SlidersHorizontal size={isSmall ? 14 : 16} strokeWidth={2.2} />
           </button>
 
-          <div className="pointer-events-auto absolute -bottom-1.5 left-1/2 -translate-x-1/2 flex items-center gap-1">
+          <div
+            className={`pointer-events-auto absolute flex items-center ${
+              isSmall ? '-bottom-1.5 -left-1.5 gap-1' : 'bottom-1.5 left-1.5 gap-2'
+            }`}
+          >
             <button
               type="button"
               aria-label={`Move ${effectiveLabel} earlier`}
@@ -413,9 +421,11 @@ export const LiveTile: React.FC<LiveTileProps> = ({
                 e.stopPropagation();
                 onMoveTile(tile.id, -1);
               }}
-              className="w-5 h-5 rounded-full bg-zinc-900/95 text-white border border-white/20 flex items-center justify-center hover:bg-zinc-700"
+              className={`rounded-full bg-zinc-950/95 text-white border-2 border-white/45 shadow-lg backdrop-blur-sm flex items-center justify-center hover:bg-zinc-800 active:scale-90 transition-all ${
+                isSmall ? 'w-7 h-7' : 'w-9 h-9'
+              }`}
             >
-              <ArrowUp size={10} />
+              <ArrowUp size={isSmall ? 13 : 15} strokeWidth={2.3} />
             </button>
             <button
               type="button"
@@ -424,9 +434,11 @@ export const LiveTile: React.FC<LiveTileProps> = ({
                 e.stopPropagation();
                 onMoveTile(tile.id, 1);
               }}
-              className="w-5 h-5 rounded-full bg-zinc-900/95 text-white border border-white/20 flex items-center justify-center hover:bg-zinc-700"
+              className={`rounded-full bg-zinc-950/95 text-white border-2 border-white/45 shadow-lg backdrop-blur-sm flex items-center justify-center hover:bg-zinc-800 active:scale-90 transition-all ${
+                isSmall ? 'w-7 h-7' : 'w-9 h-9'
+              }`}
             >
-              <ArrowDown size={10} />
+              <ArrowDown size={isSmall ? 13 : 15} strokeWidth={2.3} />
             </button>
           </div>
 
@@ -437,9 +449,11 @@ export const LiveTile: React.FC<LiveTileProps> = ({
               e.stopPropagation();
               onCycleSize(tile.id);
             }}
-            className="pointer-events-auto absolute -bottom-1.5 -right-1.5 w-6 h-6 rounded-full bg-zinc-900 text-white border border-white/25 shadow-md flex items-center justify-center hover:bg-zinc-700 transition-colors"
+            className={`pointer-events-auto absolute rounded-full bg-zinc-950/95 text-white border-2 border-white/45 shadow-lg backdrop-blur-sm flex items-center justify-center hover:bg-zinc-800 active:scale-90 transition-all ${
+              isSmall ? '-bottom-1.5 -right-1.5 w-8 h-8' : 'bottom-1.5 right-1.5 w-10 h-10'
+            }`}
           >
-            <Maximize2 size={10} />
+            <Maximize2 size={isSmall ? 13 : 15} strokeWidth={2.2} />
           </button>
         </div>
       )}
