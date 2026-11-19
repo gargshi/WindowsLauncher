@@ -4,6 +4,7 @@ import { CustomizationStudio } from './components/CustomizationStudio';
 import { PhonePreview } from './components/PhonePreview';
 import {
   APP_CATALOG,
+  DEFAULT_CALLING_APPS,
   DEFAULT_CONFIG,
   DEFAULT_TILES,
 } from './data/launcherDefaults';
@@ -11,6 +12,7 @@ import { usePWAInstall } from './hooks/usePWAInstall';
 import type {
   AlertMode,
   AppDefinition,
+  CallingAppOption,
   LauncherConfig,
   LauncherPreset,
   PhoneViewMode,
@@ -19,13 +21,17 @@ import type {
   TileSize,
 } from './types/launcher';
 import {
+  ensureNativeCommunicationPermissions,
   fetchNativeAndroidApps,
+  fetchNativeCallingApps,
+  fetchNativeCommunicationCounts,
   isAndroidNativeLauncher,
   launchNativeAndroidApp,
   openAndroidDefaultHomeSettings,
+  type CommunicationCounts,
 } from './utils/androidLauncherBridge';
 
-const STORAGE_KEY = 'oxygentile_15r_state_v3';
+const STORAGE_KEY = 'oxygentile_15r_state_v4';
 
 const TILE_SIZE_CYCLE: TileSize[] = ['1x1', '2x1', '2x2', '4x2'];
 
@@ -61,12 +67,43 @@ export default function App() {
   const [mobileStudioOpen, setMobileStudioOpen] = useState(false);
   const [now, setNow] = useState(() => new Date());
   const [apps, setApps] = useState<AppDefinition[]>(APP_CATALOG);
+  const [callingApps, setCallingApps] = useState<CallingAppOption[]>(DEFAULT_CALLING_APPS);
+  const [communicationCounts, setCommunicationCounts] = useState<CommunicationCounts | null>(null);
   const { isInstallable, isInstalled, install } = usePWAInstall();
   const isNativeAndroid = useMemo(() => isAndroidNativeLauncher(), []);
 
-  // Load real installed Android apps when running inside the compiled APK
+  const syncCommunicationCounts = async () => {
+    const counts = await fetchNativeCommunicationCounts();
+    if (!counts) return;
+    setCommunicationCounts(counts);
+    setApps((prev) =>
+      prev.map((app) => {
+        if (app.id === 'phone') {
+          return {
+            ...app,
+            badgeCount: counts.hasCallLogPermission ? counts.missedCalls : undefined,
+          };
+        }
+        if (app.id === 'messages') {
+          return {
+            ...app,
+            badgeCount: counts.hasSmsPermission ? counts.unreadMessages : undefined,
+          };
+        }
+        return app;
+      })
+    );
+  };
+
+  const handleRequestCommunicationPermissions = async () => {
+    await ensureNativeCommunicationPermissions();
+    await syncCommunicationCounts();
+  };
+
+  // Load real installed Android apps, calling apps, and live counts when running inside the compiled APK
   useEffect(() => {
     let active = true;
+
     fetchNativeAndroidApps().then((nativeApps) => {
       if (!active || !nativeApps || nativeApps.length === 0) return;
       setApps((prev) => {
@@ -79,10 +116,62 @@ export default function App() {
         return [...merged, ...extras];
       });
     });
+
+    fetchNativeCallingApps().then((nativeCalling) => {
+      if (!active || !nativeCalling || nativeCalling.length === 0) return;
+      setCallingApps(nativeCalling);
+    });
+
+    if (isNativeAndroid) {
+      ensureNativeCommunicationPermissions().then(() => {
+        if (active) void syncCommunicationCounts();
+      });
+    }
+
     return () => {
       active = false;
     };
-  }, []);
+  }, [isNativeAndroid]);
+
+  // Refresh missed call & unread message counts on resume/focus/interval
+  useEffect(() => {
+    if (!isNativeAndroid) return;
+    const handleRefresh = () => {
+      if (document.visibilityState === 'visible') {
+        void syncCommunicationCounts();
+      }
+    };
+    window.addEventListener('focus', handleRefresh);
+    document.addEventListener('visibilitychange', handleRefresh);
+    const intervalId = window.setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        void syncCommunicationCounts();
+      }
+    }, 12000);
+    return () => {
+      window.removeEventListener('focus', handleRefresh);
+      document.removeEventListener('visibilitychange', handleRefresh);
+      window.clearInterval(intervalId);
+    };
+  }, [isNativeAndroid]);
+
+  // Keep built-in Phone app synced with selected default calling app
+  useEffect(() => {
+    const selectedCalling = callingApps.find(
+      (c) => c.packageName === config.preferredDialerPackage
+    );
+    setApps((prev) =>
+      prev.map((app) => {
+        if (app.id !== 'phone') return app;
+        return {
+          ...app,
+          packageName: config.preferredDialerPackage || 'com.google.android.dialer',
+          nativeIconBase64: selectedCalling?.iconBase64 ?? app.nativeIconBase64,
+          miniAppSummary: `${selectedCalling?.name || 'Google Phone'} · Recents & VoLTE HD ready`,
+        };
+      })
+    );
+  }, [config.preferredDialerPackage, callingApps]);
 
   // Sync dark/light root class
   useEffect(() => {
@@ -238,8 +327,14 @@ export default function App() {
       return;
     }
     if (isNativeAndroid) {
-      const preferRecents = app.id === 'phone' || /dialer/i.test(app.packageName);
-      const launched = await launchNativeAndroidApp(app.packageName, { preferRecents });
+      const isPhoneApp = app.id === 'phone' || /dialer/i.test(app.packageName);
+      const targetPackage =
+        app.id === 'phone'
+          ? config.preferredDialerPackage || 'com.google.android.dialer'
+          : app.packageName;
+      const launched = await launchNativeAndroidApp(targetPackage, {
+        preferRecents: isPhoneApp,
+      });
       if (launched) return;
       // Match installed OnePlus/Android default package if generic package name differs
       const keyword =
@@ -256,7 +351,7 @@ export default function App() {
         );
         if (
           matched &&
-          (await launchNativeAndroidApp(matched.packageName, { preferRecents }))
+          (await launchNativeAndroidApp(matched.packageName, { preferRecents: isPhoneApp }))
         ) {
           return;
         }
@@ -425,6 +520,9 @@ export default function App() {
               onInstallPWA={() => void install()}
               isNativeAndroid={isNativeAndroid}
               onOpenDefaultHomeSettings={() => void openAndroidDefaultHomeSettings()}
+              callingApps={callingApps}
+              communicationCounts={communicationCounts}
+              onRequestCommunicationPermissions={() => void handleRequestCommunicationPermissions()}
             />
           </div>
         </section>
@@ -468,6 +566,9 @@ export default function App() {
                 onInstallPWA={() => void install()}
                 isNativeAndroid={isNativeAndroid}
                 onOpenDefaultHomeSettings={() => void openAndroidDefaultHomeSettings()}
+                callingApps={callingApps}
+                communicationCounts={communicationCounts}
+                onRequestCommunicationPermissions={() => void handleRequestCommunicationPermissions()}
               />
             </div>
           </div>

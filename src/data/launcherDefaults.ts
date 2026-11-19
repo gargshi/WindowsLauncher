@@ -41,6 +41,7 @@ import {
 } from 'lucide-react';
 import type {
   AppDefinition,
+  CallingAppOption,
   IconName,
   LauncherConfig,
   LauncherPreset,
@@ -154,12 +155,11 @@ export const APP_CATALOG: AppDefinition[] = [
   {
     id: 'phone',
     name: 'Phone',
-    packageName: 'com.android.dialer',
+    packageName: 'com.google.android.dialer',
     category: 'Communication',
     icon: 'phone',
     liveFeedType: 'none',
-    badgeCount: 1,
-    miniAppSummary: 'VoLTE HD · 5G Standby · 1 missed call from Studio Desk',
+    miniAppSummary: 'Google Phone · Recents & VoLTE HD ready',
   },
   {
     id: 'messages',
@@ -168,8 +168,7 @@ export const APP_CATALOG: AppDefinition[] = [
     category: 'Communication',
     icon: 'message',
     liveFeedType: 'messages',
-    badgeCount: 3,
-    miniAppSummary: 'RCS Active · 3 unread threads',
+    miniAppSummary: 'Google Messages · RCS active',
   },
   {
     id: 'contacts',
@@ -366,6 +365,13 @@ export const APP_CATALOG: AppDefinition[] = [
   },
 ];
 
+export const DEFAULT_CALLING_APPS: CallingAppOption[] = [
+  { name: 'Google Phone', packageName: 'com.google.android.dialer' },
+  { name: 'OnePlus Dialer', packageName: 'com.oplus.dialer' },
+  { name: 'Phone (System)', packageName: 'com.android.dialer' },
+  { name: 'Truecaller', packageName: 'com.truecaller' },
+];
+
 export const DEFAULT_CONFIG: LauncherConfig = {
   theme: 'dark',
   accentColor: '#EB0028',
@@ -387,11 +393,12 @@ export const DEFAULT_CONFIG: LauncherConfig = {
   wallpaperId: 'oxygen-obsidian',
   showStatusBar: true,
   parallaxDepth: true,
+  preferredDialerPackage: 'com.google.android.dialer',
 };
 
 export const DEFAULT_TILES: TileItem[] = [
-  { id: 'tile-phone', appId: 'phone', size: '2x2', liveEnabled: false, badgeCount: 1, order: 0 },
-  { id: 'tile-messages', appId: 'messages', size: '2x2', liveEnabled: false, badgeCount: 3, order: 1 },
+  { id: 'tile-phone', appId: 'phone', size: '2x2', liveEnabled: false, order: 0 },
+  { id: 'tile-messages', appId: 'messages', size: '2x2', liveEnabled: false, order: 1 },
   { id: 'tile-contacts', appId: 'contacts', size: '2x2', liveEnabled: false, order: 2 },
   { id: 'tile-customize', appId: 'customize', size: '2x2', liveEnabled: false, order: 3 },
 ];

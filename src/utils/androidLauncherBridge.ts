@@ -1,4 +1,4 @@
-import type { AppDefinition } from '../types/launcher';
+import type { AppDefinition, CallingAppOption } from '../types/launcher';
 
 interface NativeInstalledApp {
   name: string;
@@ -6,8 +6,21 @@ interface NativeInstalledApp {
   iconBase64?: string;
 }
 
+export interface CommunicationCounts {
+  missedCalls: number;
+  unreadMessages: number;
+  hasCallLogPermission: boolean;
+  hasSmsPermission: boolean;
+}
+
 interface LauncherBridgePlugin {
   getInstalledApps: () => Promise<{ apps: NativeInstalledApp[] }>;
+  getCallingApps: () => Promise<{ apps: CallingAppOption[] }>;
+  ensureCommunicationPermissions: () => Promise<{
+    hasCallLogPermission: boolean;
+    hasSmsPermission: boolean;
+  }>;
+  getCommunicationCounts: () => Promise<CommunicationCounts>;
   launchApp: (options: { packageName: string; preferRecents?: boolean }) => Promise<void>;
   openHomeSettings: () => Promise<void>;
 }
@@ -45,6 +58,44 @@ export async function fetchNativeAndroidApps(): Promise<AppDefinition[] | null> 
       miniAppSummary: `Installed Android app (${app.packageName})`,
       nativeIconBase64: app.iconBase64,
     }));
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchNativeCallingApps(): Promise<CallingAppOption[] | null> {
+  if (!isAndroidNativeLauncher()) return null;
+  try {
+    const bridge = (window as CapacitorWindow).Capacitor?.Plugins?.LauncherBridge;
+    if (!bridge?.getCallingApps) return null;
+    const res = await bridge.getCallingApps();
+    if (!res?.apps || res.apps.length === 0) return null;
+    return res.apps;
+  } catch {
+    return null;
+  }
+}
+
+export async function ensureNativeCommunicationPermissions(): Promise<{
+  hasCallLogPermission: boolean;
+  hasSmsPermission: boolean;
+} | null> {
+  if (!isAndroidNativeLauncher()) return null;
+  try {
+    const bridge = (window as CapacitorWindow).Capacitor?.Plugins?.LauncherBridge;
+    if (!bridge?.ensureCommunicationPermissions) return null;
+    return await bridge.ensureCommunicationPermissions();
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchNativeCommunicationCounts(): Promise<CommunicationCounts | null> {
+  if (!isAndroidNativeLauncher()) return null;
+  try {
+    const bridge = (window as CapacitorWindow).Capacitor?.Plugins?.LauncherBridge;
+    if (!bridge?.getCommunicationCounts) return null;
+    return await bridge.getCommunicationCounts();
   } catch {
     return null;
   }

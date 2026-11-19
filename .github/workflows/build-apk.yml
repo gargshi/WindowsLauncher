@@ -76,12 +76,17 @@ jobs:
           manifest_path = Path("android/app/src/main/AndroidManifest.xml")
           manifest = manifest_path.read_text()
 
-          if "QUERY_ALL_PACKAGES" not in manifest:
-              manifest = manifest.replace(
-                  "<application",
-                  '    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />\n\n    <application',
-                  1,
-              )
+          for perm in [
+              "android.permission.QUERY_ALL_PACKAGES",
+              "android.permission.READ_CALL_LOG",
+              "android.permission.READ_SMS",
+          ]:
+              if perm not in manifest:
+                  manifest = manifest.replace(
+                      "<application",
+                      f'    <uses-permission android:name="{perm}" />\n\n    <application',
+                      1,
+                  )
 
           if "android.intent.category.HOME" not in manifest:
               manifest, count = re.subn(
@@ -101,12 +106,16 @@ jobs:
           cat <<'JAVA' > android/app/src/main/java/com/oxygentile/launcher/LauncherBridgePlugin.java
           package com.oxygentile.launcher;
 
+          import android.Manifest;
           import android.content.Intent;
           import android.content.pm.PackageManager;
           import android.content.pm.ResolveInfo;
+          import android.database.Cursor;
           import android.graphics.Bitmap;
           import android.graphics.Canvas;
           import android.graphics.drawable.Drawable;
+          import android.net.Uri;
+          import android.os.Build;
           import android.provider.CallLog;
           import android.provider.Settings;
           import android.util.Base64;
@@ -116,11 +125,41 @@ jobs:
           import com.getcapacitor.PluginCall;
           import com.getcapacitor.PluginMethod;
           import com.getcapacitor.annotation.CapacitorPlugin;
+          import com.getcapacitor.annotation.Permission;
+          import com.getcapacitor.annotation.PermissionCallback;
           import java.io.ByteArrayOutputStream;
+          import java.util.ArrayList;
+          import java.util.LinkedHashMap;
           import java.util.List;
+          import java.util.Map;
 
-          @CapacitorPlugin(name = "LauncherBridge")
+          @CapacitorPlugin(
+              name = "LauncherBridge",
+              permissions = {
+                  @Permission(
+                      alias = "communication",
+                      strings = {
+                          Manifest.permission.READ_CALL_LOG,
+                          Manifest.permission.READ_SMS
+                      }
+                  )
+              }
+          )
           public class LauncherBridgePlugin extends Plugin {
+              private String encodeDrawable(Drawable drawable) {
+                  try {
+                      Bitmap bitmap = Bitmap.createBitmap(96, 96, Bitmap.Config.ARGB_8888);
+                      Canvas canvas = new Canvas(bitmap);
+                      drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
+                      drawable.draw(canvas);
+                      ByteArrayOutputStream out = new ByteArrayOutputStream();
+                      bitmap.compress(Bitmap.CompressFormat.PNG, 90, out);
+                      return "data:image/png;base64," + Base64.encodeToString(out.toByteArray(), Base64.NO_WRAP);
+                  } catch (Exception ignored) {
+                      return null;
+                  }
+              }
+
               @PluginMethod
               public void getInstalledApps(PluginCall call) {
                   PackageManager pm = getContext().getPackageManager();
@@ -137,21 +176,160 @@ jobs:
                       JSObject item = new JSObject();
                       item.put("name", label);
                       item.put("packageName", pkg);
-                      try {
-                          Drawable drawable = info.loadIcon(pm);
-                          Bitmap bitmap = Bitmap.createBitmap(96, 96, Bitmap.Config.ARGB_8888);
-                          Canvas canvas = new Canvas(bitmap);
-                          drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
-                          drawable.draw(canvas);
-                          ByteArrayOutputStream out = new ByteArrayOutputStream();
-                          bitmap.compress(Bitmap.CompressFormat.PNG, 90, out);
-                          item.put("iconBase64", "data:image/png;base64," + Base64.encodeToString(out.toByteArray(), Base64.NO_WRAP));
-                      } catch (Exception ignored) {}
+                      String iconB64 = encodeDrawable(info.loadIcon(pm));
+                      if (iconB64 != null) item.put("iconBase64", iconB64);
                       apps.put(item);
                   }
 
                   JSObject result = new JSObject();
                   result.put("apps", apps);
+                  call.resolve(result);
+              }
+
+              @PluginMethod
+              public void getCallingApps(PluginCall call) {
+                  PackageManager pm = getContext().getPackageManager();
+                  String selfPackage = getContext().getPackageName();
+                  int flags = Build.VERSION.SDK_INT >= 23 ? PackageManager.MATCH_ALL : 0;
+
+                  Map<String, JSObject> found = new LinkedHashMap<>();
+
+                  Intent dialIntent = new Intent(Intent.ACTION_DIAL);
+                  List<ResolveInfo> dialResolved = pm.queryIntentActivities(dialIntent, flags);
+                  for (ResolveInfo info : dialResolved) {
+                      String pkg = info.activityInfo.packageName;
+                      if (pkg.equals(selfPackage) || found.containsKey(pkg)) continue;
+                      JSObject item = new JSObject();
+                      item.put("name", info.loadLabel(pm).toString());
+                      item.put("packageName", pkg);
+                      String iconB64 = encodeDrawable(info.loadIcon(pm));
+                      if (iconB64 != null) item.put("iconBase64", iconB64);
+                      found.put(pkg, item);
+                  }
+
+                  Intent launcherIntent = new Intent(Intent.ACTION_MAIN, null);
+                  launcherIntent.addCategory(Intent.CATEGORY_LAUNCHER);
+                  List<ResolveInfo> launcherResolved = pm.queryIntentActivities(launcherIntent, 0);
+                  for (ResolveInfo info : launcherResolved) {
+                      String pkg = info.activityInfo.packageName;
+                      if (pkg.equals(selfPackage) || found.containsKey(pkg)) continue;
+                      String lower = pkg.toLowerCase();
+                      if (lower.contains("dialer") || lower.equals("com.truecaller")) {
+                          JSObject item = new JSObject();
+                          item.put("name", info.loadLabel(pm).toString());
+                          item.put("packageName", pkg);
+                          String iconB64 = encodeDrawable(info.loadIcon(pm));
+                          if (iconB64 != null) item.put("iconBase64", iconB64);
+                          found.put(pkg, item);
+                      }
+                  }
+
+                  List<JSObject> ordered = new ArrayList<>();
+                  if (found.containsKey("com.google.android.dialer")) {
+                      ordered.add(found.remove("com.google.android.dialer"));
+                  }
+                  ordered.addAll(found.values());
+
+                  JSArray apps = new JSArray();
+                  for (JSObject obj : ordered) {
+                      apps.put(obj);
+                  }
+                  JSObject result = new JSObject();
+                  result.put("apps", apps);
+                  call.resolve(result);
+              }
+
+              @PluginMethod
+              public void ensureCommunicationPermissions(PluginCall call) {
+                  boolean hasCallLog = getContext().checkSelfPermission(Manifest.permission.READ_CALL_LOG) == PackageManager.PERMISSION_GRANTED;
+                  boolean hasSms = getContext().checkSelfPermission(Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED;
+                  if (hasCallLog && hasSms) {
+                      JSObject ret = new JSObject();
+                      ret.put("hasCallLogPermission", true);
+                      ret.put("hasSmsPermission", true);
+                      call.resolve(ret);
+                      return;
+                  }
+                  requestPermissionForAlias("communication", call, "communicationPermsCallback");
+              }
+
+              @PermissionCallback
+              private void communicationPermsCallback(PluginCall call) {
+                  boolean hasCallLog = getContext().checkSelfPermission(Manifest.permission.READ_CALL_LOG) == PackageManager.PERMISSION_GRANTED;
+                  boolean hasSms = getContext().checkSelfPermission(Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED;
+                  JSObject ret = new JSObject();
+                  ret.put("hasCallLogPermission", hasCallLog);
+                  ret.put("hasSmsPermission", hasSms);
+                  call.resolve(ret);
+              }
+
+              @PluginMethod
+              public void getCommunicationCounts(PluginCall call) {
+                  boolean hasCallLog = getContext().checkSelfPermission(Manifest.permission.READ_CALL_LOG) == PackageManager.PERMISSION_GRANTED;
+                  boolean hasSms = getContext().checkSelfPermission(Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED;
+                  int missedCalls = 0;
+                  int unreadMessages = 0;
+
+                  if (hasCallLog) {
+                      Cursor cursor = null;
+                      try {
+                          cursor = getContext().getContentResolver().query(
+                              CallLog.Calls.CONTENT_URI,
+                              new String[] { CallLog.Calls._ID },
+                              CallLog.Calls.TYPE + " = ? AND " + CallLog.Calls.NEW + " = 1 AND (" + CallLog.Calls.IS_READ + " = 0 OR " + CallLog.Calls.IS_READ + " IS NULL)",
+                              new String[] { String.valueOf(CallLog.Calls.MISSED_TYPE) },
+                              null
+                          );
+                          if (cursor != null) {
+                              missedCalls = cursor.getCount();
+                          }
+                      } catch (Exception ignored) {
+                      } finally {
+                          if (cursor != null) cursor.close();
+                      }
+                  }
+
+                  if (hasSms) {
+                      Cursor smsCursor = null;
+                      try {
+                          smsCursor = getContext().getContentResolver().query(
+                              Uri.parse("content://sms/inbox"),
+                              new String[] { "_id" },
+                              "read = 0",
+                              null,
+                              null
+                          );
+                          if (smsCursor != null) {
+                              unreadMessages += smsCursor.getCount();
+                          }
+                      } catch (Exception ignored) {
+                      } finally {
+                          if (smsCursor != null) smsCursor.close();
+                      }
+
+                      Cursor mmsCursor = null;
+                      try {
+                          mmsCursor = getContext().getContentResolver().query(
+                              Uri.parse("content://mms/inbox"),
+                              new String[] { "_id" },
+                              "read = 0 AND (m_type = 130 OR m_type = 132)",
+                              null,
+                              null
+                          );
+                          if (mmsCursor != null) {
+                              unreadMessages += mmsCursor.getCount();
+                          }
+                      } catch (Exception ignored) {
+                      } finally {
+                          if (mmsCursor != null) mmsCursor.close();
+                      }
+                  }
+
+                  JSObject result = new JSObject();
+                  result.put("missedCalls", missedCalls);
+                  result.put("unreadMessages", unreadMessages);
+                  result.put("hasCallLogPermission", hasCallLog);
+                  result.put("hasSmsPermission", hasSms);
                   call.resolve(result);
               }
 
@@ -165,6 +343,7 @@ jobs:
                   }
                   PackageManager pm = getContext().getPackageManager();
                   boolean isDialer = Boolean.TRUE.equals(preferRecents)
+                      || "com.google.android.dialer".equals(packageName)
                       || "com.android.dialer".equals(packageName)
                       || packageName.toLowerCase().contains("dialer");
 
@@ -172,6 +351,7 @@ jobs:
                       try {
                           Intent recentsIntent = new Intent(Intent.ACTION_VIEW);
                           recentsIntent.setType(CallLog.Calls.CONTENT_TYPE);
+                          recentsIntent.setPackage(packageName);
                           recentsIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                           if (recentsIntent.resolveActivity(pm) != null) {
                               getContext().startActivity(recentsIntent);
@@ -183,6 +363,17 @@ jobs:
 
                   Intent launchIntent = pm.getLaunchIntentForPackage(packageName);
                   if (launchIntent == null && isDialer) {
+                      try {
+                          Intent genericRecents = new Intent(Intent.ACTION_VIEW);
+                          genericRecents.setType(CallLog.Calls.CONTENT_TYPE);
+                          genericRecents.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                          if (genericRecents.resolveActivity(pm) != null) {
+                              getContext().startActivity(genericRecents);
+                              call.resolve();
+                              return;
+                          }
+                      } catch (Exception ignored) {}
+
                       String[] dialerCandidates = new String[] {
                           "com.google.android.dialer",
                           "com.oplus.dialer",

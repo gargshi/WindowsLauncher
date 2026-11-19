@@ -100,6 +100,12 @@ export interface WallpaperOption {
   themeHint: 'dark' | 'light';
 }
 
+export interface CallingAppOption {
+  name: string;
+  packageName: string;
+  iconBase64?: string;
+}
+
 export interface LauncherConfig {
   theme: 'dark' | 'light';
   accentColor: string;
@@ -121,6 +127,7 @@ export interface LauncherConfig {
   wallpaperId: string;
   showStatusBar: boolean;
   parallaxDepth: boolean;
+  preferredDialerPackage: string;
 }
 
 export interface LauncherPreset {

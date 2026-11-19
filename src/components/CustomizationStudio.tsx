@@ -7,6 +7,7 @@ import {
   Layers,
   Moon,
   Palette,
+  Phone,
   RotateCcw,
   Sliders,
   Smartphone,
@@ -22,6 +23,7 @@ import {
 } from '../data/launcherDefaults';
 import type {
   AppDefinition,
+  CallingAppOption,
   IconName,
   IconStyle,
   LabelAlignment,
@@ -33,6 +35,7 @@ import type {
   TileSize,
   TileSurfaceStyle,
 } from '../types/launcher';
+import type { CommunicationCounts } from '../utils/androidLauncherBridge';
 import { IconRenderer } from './IconRenderer';
 
 interface CustomizationStudioProps {
@@ -55,6 +58,9 @@ interface CustomizationStudioProps {
   onInstallPWA: () => void;
   isNativeAndroid: boolean;
   onOpenDefaultHomeSettings: () => void;
+  callingApps: CallingAppOption[];
+  communicationCounts: CommunicationCounts | null;
+  onRequestCommunicationPermissions: () => void;
 }
 
 export const CustomizationStudio: React.FC<CustomizationStudioProps> = ({
@@ -77,6 +83,9 @@ export const CustomizationStudio: React.FC<CustomizationStudioProps> = ({
   onInstallPWA,
   isNativeAndroid,
   onOpenDefaultHomeSettings,
+  callingApps,
+  communicationCounts,
+  onRequestCommunicationPermissions,
 }) => {
   const [importText, setImportText] = useState('');
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
@@ -541,6 +550,89 @@ export const CustomizationStudio: React.FC<CustomizationStudioProps> = ({
                 })}
               </div>
             </section>
+
+            <hr className="border-slate-200 dark:border-white/10" />
+
+            {/* Default Calling App & Live Counts */}
+            <section className="space-y-4">
+              <div className="flex items-start justify-between gap-4 flex-wrap">
+                <div>
+                  <h2 className="text-sm font-semibold text-slate-900 dark:text-white">
+                    Calling App & Live Counts
+                  </h2>
+                  <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
+                    Defaults to Google Phone Recents. Switch between installed calling apps on your device.
+                  </p>
+                </div>
+
+                {isNativeAndroid &&
+                  (!communicationCounts?.hasCallLogPermission ||
+                    !communicationCounts?.hasSmsPermission) && (
+                    <button
+                      type="button"
+                      onClick={onRequestCommunicationPermissions}
+                      className="min-h-[36px] px-3 rounded-xl text-xs font-semibold text-white shrink-0"
+                      style={{ backgroundColor: config.accentColor }}
+                    >
+                      Allow Live Call & SMS Counts
+                    </button>
+                  )}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {callingApps.map((dialer) => {
+                  const active =
+                    (config.preferredDialerPackage || 'com.google.android.dialer') ===
+                    dialer.packageName;
+                  return (
+                    <button
+                      key={dialer.packageName}
+                      type="button"
+                      onClick={() => {
+                        onUpdateConfig({ preferredDialerPackage: dialer.packageName });
+                        showTempMessage(`Switched Phone tile to ${dialer.name}.`);
+                      }}
+                      className={`min-h-[48px] px-3 py-2 rounded-xl border flex items-center justify-between gap-3 text-left transition-colors ${
+                        active
+                          ? 'text-white border-transparent'
+                          : 'border-slate-200 dark:border-white/10 text-slate-800 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-white/5'
+                      }`}
+                      style={active ? { backgroundColor: config.accentColor } : undefined}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        {dialer.iconBase64 ? (
+                          <img
+                            src={dialer.iconBase64}
+                            alt={dialer.name}
+                            referrerPolicy="no-referrer"
+                            className="w-7 h-7 rounded-lg object-contain shrink-0"
+                          />
+                        ) : (
+                          <span
+                            className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+                              active ? 'bg-white/20' : 'bg-slate-100 dark:bg-white/10'
+                            }`}
+                          >
+                            <Phone size={14} />
+                          </span>
+                        )}
+                        <div className="min-w-0">
+                          <div className="text-xs font-semibold truncate">{dialer.name}</div>
+                          <div
+                            className={`text-[10px] font-mono-tabular truncate ${
+                              active ? 'text-white/80' : 'text-slate-500 dark:text-zinc-400'
+                            }`}
+                          >
+                            {dialer.packageName}
+                          </div>
+                        </div>
+                      </div>
+                      {active && <Check size={14} className="shrink-0" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
           </>
         )}
 
@@ -950,24 +1042,41 @@ export const CustomizationStudio: React.FC<CustomizationStudioProps> = ({
                     />
                   </label>
 
-                  <label className="space-y-1.5 block">
-                    <span className="text-xs font-medium text-slate-700 dark:text-zinc-300 block">
-                      Missed / Unread Count
-                    </span>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-medium text-slate-700 dark:text-zinc-300">
+                        Missed / Unread Count
+                      </span>
+                      {selectedTile.badgeCount !== undefined && (
+                        <button
+                          type="button"
+                          onClick={() => onUpdateTile(selectedTile.id, { badgeCount: undefined })}
+                          className="text-[11px] font-medium text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                        >
+                          Use Live Count
+                        </button>
+                      )}
+                    </div>
                     <input
                       type="number"
                       min={0}
                       max={999}
-                      value={selectedTile.badgeCount ?? selectedApp.badgeCount ?? 0}
+                      placeholder={String(selectedApp.badgeCount ?? 0)}
+                      value={selectedTile.badgeCount ?? ''}
                       onChange={(e) => {
-                        const val = Math.max(0, Math.min(999, Number(e.target.value) || 0));
+                        const raw = e.target.value;
+                        if (raw === '') {
+                          onUpdateTile(selectedTile.id, { badgeCount: undefined });
+                          return;
+                        }
+                        const val = Math.max(0, Math.min(999, Number(raw) || 0));
                         onUpdateTile(selectedTile.id, {
                           badgeCount: val,
                         });
                       }}
                       className="w-full h-10 px-3 rounded-xl text-xs font-mono-tabular border border-slate-200 dark:border-white/15 bg-white dark:bg-zinc-950 text-slate-900 dark:text-white outline-none focus:border-rose-500"
                     />
-                  </label>
+                  </div>
                 </div>
 
                 {/* Per-Tile Color Override */}
