@@ -21,14 +21,11 @@ import type {
   TileSize,
 } from './types/launcher';
 import {
-  ensureNativeCommunicationPermissions,
   fetchNativeAndroidApps,
   fetchNativeCallingApps,
-  fetchNativeCommunicationCounts,
   isAndroidNativeLauncher,
   launchNativeAndroidApp,
   openAndroidDefaultHomeSettings,
-  type CommunicationCounts,
 } from './utils/androidLauncherBridge';
 
 const STORAGE_KEY = 'oxygentile_15r_state_v4';
@@ -68,39 +65,10 @@ export default function App() {
   const [now, setNow] = useState(() => new Date());
   const [apps, setApps] = useState<AppDefinition[]>(APP_CATALOG);
   const [callingApps, setCallingApps] = useState<CallingAppOption[]>(DEFAULT_CALLING_APPS);
-  const [communicationCounts, setCommunicationCounts] = useState<CommunicationCounts | null>(null);
   const { isInstallable, isInstalled, install } = usePWAInstall();
   const isNativeAndroid = useMemo(() => isAndroidNativeLauncher(), []);
 
-  const syncCommunicationCounts = async () => {
-    const counts = await fetchNativeCommunicationCounts();
-    if (!counts) return;
-    setCommunicationCounts(counts);
-    setApps((prev) =>
-      prev.map((app) => {
-        if (app.id === 'phone') {
-          return {
-            ...app,
-            badgeCount: counts.hasCallLogPermission ? counts.missedCalls : undefined,
-          };
-        }
-        if (app.id === 'messages') {
-          return {
-            ...app,
-            badgeCount: counts.hasSmsPermission ? counts.unreadMessages : undefined,
-          };
-        }
-        return app;
-      })
-    );
-  };
-
-  const handleRequestCommunicationPermissions = async () => {
-    await ensureNativeCommunicationPermissions();
-    await syncCommunicationCounts();
-  };
-
-  // Load real installed Android apps, calling apps, and live counts when running inside the compiled APK
+  // Load real installed Android apps and calling apps when running inside the compiled APK
   useEffect(() => {
     let active = true;
 
@@ -122,36 +90,8 @@ export default function App() {
       setCallingApps(nativeCalling);
     });
 
-    if (isNativeAndroid) {
-      ensureNativeCommunicationPermissions().then(() => {
-        if (active) void syncCommunicationCounts();
-      });
-    }
-
     return () => {
       active = false;
-    };
-  }, [isNativeAndroid]);
-
-  // Refresh missed call & unread message counts on resume/focus/interval
-  useEffect(() => {
-    if (!isNativeAndroid) return;
-    const handleRefresh = () => {
-      if (document.visibilityState === 'visible') {
-        void syncCommunicationCounts();
-      }
-    };
-    window.addEventListener('focus', handleRefresh);
-    document.addEventListener('visibilitychange', handleRefresh);
-    const intervalId = window.setInterval(() => {
-      if (document.visibilityState === 'visible') {
-        void syncCommunicationCounts();
-      }
-    }, 12000);
-    return () => {
-      window.removeEventListener('focus', handleRefresh);
-      document.removeEventListener('visibilitychange', handleRefresh);
-      window.clearInterval(intervalId);
     };
   }, [isNativeAndroid]);
 
@@ -521,8 +461,6 @@ export default function App() {
               isNativeAndroid={isNativeAndroid}
               onOpenDefaultHomeSettings={() => void openAndroidDefaultHomeSettings()}
               callingApps={callingApps}
-              communicationCounts={communicationCounts}
-              onRequestCommunicationPermissions={() => void handleRequestCommunicationPermissions()}
             />
           </div>
         </section>
@@ -567,8 +505,6 @@ export default function App() {
                 isNativeAndroid={isNativeAndroid}
                 onOpenDefaultHomeSettings={() => void openAndroidDefaultHomeSettings()}
                 callingApps={callingApps}
-                communicationCounts={communicationCounts}
-                onRequestCommunicationPermissions={() => void handleRequestCommunicationPermissions()}
               />
             </div>
           </div>

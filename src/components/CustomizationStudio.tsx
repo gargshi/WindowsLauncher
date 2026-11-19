@@ -35,7 +35,6 @@ import type {
   TileSize,
   TileSurfaceStyle,
 } from '../types/launcher';
-import type { CommunicationCounts } from '../utils/androidLauncherBridge';
 import { IconRenderer } from './IconRenderer';
 
 interface CustomizationStudioProps {
@@ -59,8 +58,6 @@ interface CustomizationStudioProps {
   isNativeAndroid: boolean;
   onOpenDefaultHomeSettings: () => void;
   callingApps: CallingAppOption[];
-  communicationCounts: CommunicationCounts | null;
-  onRequestCommunicationPermissions: () => void;
 }
 
 export const CustomizationStudio: React.FC<CustomizationStudioProps> = ({
@@ -84,8 +81,6 @@ export const CustomizationStudio: React.FC<CustomizationStudioProps> = ({
   isNativeAndroid,
   onOpenDefaultHomeSettings,
   callingApps,
-  communicationCounts,
-  onRequestCommunicationPermissions,
 }) => {
   const [importText, setImportText] = useState('');
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
@@ -553,30 +548,15 @@ export const CustomizationStudio: React.FC<CustomizationStudioProps> = ({
 
             <hr className="border-slate-200 dark:border-white/10" />
 
-            {/* Default Calling App & Live Counts */}
+            {/* Default Calling App */}
             <section className="space-y-4">
-              <div className="flex items-start justify-between gap-4 flex-wrap">
-                <div>
-                  <h2 className="text-sm font-semibold text-slate-900 dark:text-white">
-                    Calling App & Live Counts
-                  </h2>
-                  <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
-                    Defaults to Google Phone Recents. Switch between installed calling apps on your device.
-                  </p>
-                </div>
-
-                {isNativeAndroid &&
-                  (!communicationCounts?.hasCallLogPermission ||
-                    !communicationCounts?.hasSmsPermission) && (
-                    <button
-                      type="button"
-                      onClick={onRequestCommunicationPermissions}
-                      className="min-h-[36px] px-3 rounded-xl text-xs font-semibold text-white shrink-0"
-                      style={{ backgroundColor: config.accentColor }}
-                    >
-                      Allow Live Call & SMS Counts
-                    </button>
-                  )}
+              <div>
+                <h2 className="text-sm font-semibold text-slate-900 dark:text-white">
+                  Default Calling App
+                </h2>
+                <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
+                  Defaults to Google Phone Recents. Switch between installed calling apps on your device.
+                </p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -1053,7 +1033,7 @@ export const CustomizationStudio: React.FC<CustomizationStudioProps> = ({
                           onClick={() => onUpdateTile(selectedTile.id, { badgeCount: undefined })}
                           className="text-[11px] font-medium text-slate-500 hover:text-slate-900 dark:hover:text-white"
                         >
-                          Use Live Count
+                          Clear
                         </button>
                       )}
                     </div>
