@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import {
   ArrowRight,
   BatteryCharging,
@@ -72,7 +72,31 @@ export const PhonePreview: React.FC<PhonePreviewProps> = ({
 }) => {
   const wallpaper = WALLPAPERS.find((w) => w.id === config.wallpaperId) ?? WALLPAPERS[0];
   const isLight = config.theme === 'light';
+  const isSolidBlackBackdrop = viewMode === 'apps' || Boolean(config.tileWindowMode);
+  const useLightUiChrome = !isSolidBlackBackdrop && isLight;
   const swipeStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+  const displayAreaRef = useRef<HTMLDivElement | null>(null);
+  const startScrollRef = useRef<HTMLDivElement | null>(null);
+  const [displaySize, setDisplaySize] = useState<{ width: number; height: number }>({
+    width: 372,
+    height: 730,
+  });
+
+  useLayoutEffect(() => {
+    const el = displayAreaRef.current;
+    if (!el) return;
+    const updateSize = () => {
+      setDisplaySize({
+        width: el.clientWidth,
+        height: el.clientHeight,
+      });
+    };
+    updateSize();
+    if (typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(updateSize);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   const evaluateSwipe = (endX: number, endY: number) => {
     const start = swipeStartRef.current;
@@ -134,6 +158,7 @@ export const PhonePreview: React.FC<PhonePreviewProps> = ({
       : 'grid-cols-4';
 
   const sortedTiles = [...tiles].sort((a, b) => a.order - b.order);
+  const tilesLayoutKey = sortedTiles.map((t) => `${t.id}:${t.size}:${t.order}`).join('|');
   const pinnedAppIds = new Set(tiles.map((t) => t.appId));
 
   const timeString = now.toLocaleTimeString([], {
@@ -162,6 +187,10 @@ export const PhonePreview: React.FC<PhonePreviewProps> = ({
       : {
           background: wallpaper.value,
         };
+
+  const displayBackgroundStyle: React.CSSProperties = isSolidBlackBackdrop
+    ? { background: '#000000' }
+    : wallpaperStyle;
 
   return (
     <div className="relative flex items-center justify-center w-full h-full">
@@ -195,14 +224,16 @@ export const PhonePreview: React.FC<PhonePreviewProps> = ({
         {/* Inner AMOLED Display */}
         <div
           className="relative w-full h-full lg:rounded-[38px] overflow-hidden flex flex-col"
-          style={wallpaperStyle}
+          style={displayBackgroundStyle}
         >
-          {/* Contrast scrim when wallpaper is bright/image */}
-          <div
-            className={`absolute inset-0 pointer-events-none ${
-              isLight ? 'bg-white/25' : 'bg-black/25'
-            }`}
-          />
+          {/* Contrast scrim when full-bleed wallpaper is shown */}
+          {!isSolidBlackBackdrop && (
+            <div
+              className={`absolute inset-0 pointer-events-none ${
+                isLight ? 'bg-white/25' : 'bg-black/25'
+              }`}
+            />
+          )}
 
           {/* Alert Slider OxygenOS Toast */}
           {showAlertToast && (
@@ -228,7 +259,7 @@ export const PhonePreview: React.FC<PhonePreviewProps> = ({
           {config.showStatusBar && (
             <div
               className={`hidden lg:flex relative z-20 px-5 pt-2.5 pb-1.5 items-center justify-between text-[11px] font-mono-tabular font-medium select-none ${
-                isLight ? 'text-slate-900' : 'text-white'
+                useLightUiChrome ? 'text-slate-900' : 'text-white'
               }`}
             >
               <span>{timeString}</span>
@@ -259,6 +290,7 @@ export const PhonePreview: React.FC<PhonePreviewProps> = ({
 
           {/* Main Screen Content */}
           <div
+            ref={displayAreaRef}
             className="relative z-10 flex-1 overflow-hidden touch-pan-y"
             onPointerDown={handleScreenPointerDown}
             onPointerUp={handleScreenPointerUp}
@@ -266,7 +298,13 @@ export const PhonePreview: React.FC<PhonePreviewProps> = ({
             onTouchEnd={handleScreenTouchEnd}
           >
             {viewMode === 'start' ? (
-              <div className="h-full overflow-y-auto no-scrollbar touch-pan-y px-3.5 pt-3 pb-8">
+              <div
+                ref={startScrollRef}
+                onScroll={(e) => {
+                  e.currentTarget.style.setProperty('--wp-scroll-y', `${e.currentTarget.scrollTop}px`);
+                }}
+                className="relative h-full overflow-y-auto no-scrollbar touch-pan-y px-3.5 pt-3 pb-8"
+              >
                 {/* Live Tile Dense Grid */}
                 <div
                   className={`grid ${gridColsClass} grid-flow-dense`}
@@ -286,6 +324,9 @@ export const PhonePreview: React.FC<PhonePreviewProps> = ({
                         config={config}
                         isSelected={selectedTileId === tile.id}
                         isEditMode={isEditMode}
+                        wallpaperStyle={wallpaperStyle}
+                        displaySize={displaySize}
+                        tilesLayoutKey={tilesLayoutKey}
                         onLaunchApp={onLaunchApp}
                         onSelectTile={onSelectTile}
                         onCycleSize={onCycleTileSize}
@@ -307,7 +348,7 @@ export const PhonePreview: React.FC<PhonePreviewProps> = ({
                     className={`min-h-[40px] px-3 rounded-xl font-medium flex items-center gap-1.5 transition-colors ${
                       isEditMode
                         ? 'text-white'
-                        : isLight
+                        : useLightUiChrome
                         ? 'text-slate-700 hover:bg-slate-900/5'
                         : 'text-zinc-300 hover:bg-white/10'
                     }`}
@@ -324,7 +365,7 @@ export const PhonePreview: React.FC<PhonePreviewProps> = ({
                     type="button"
                     onClick={() => onChangeViewMode('apps')}
                     className={`min-h-[44px] px-3 flex items-center gap-2 font-medium transition-opacity hover:opacity-80 ${
-                      isLight ? 'text-slate-900' : 'text-white'
+                      useLightUiChrome ? 'text-slate-900' : 'text-white'
                     }`}
                     style={{ fontSize: `${Math.round(14 * (config.fontScale ?? 1))}px` }}
                   >
@@ -332,7 +373,9 @@ export const PhonePreview: React.FC<PhonePreviewProps> = ({
                     <span
                       className="w-7 h-7 rounded-full border flex items-center justify-center"
                       style={{
-                        borderColor: isLight ? 'rgba(15,23,42,0.35)' : 'rgba(255,255,255,0.4)',
+                        borderColor: useLightUiChrome
+                          ? 'rgba(15,23,42,0.35)'
+                          : 'rgba(255,255,255,0.4)',
                       }}
                     >
                       <ArrowRight size={14} />
@@ -345,6 +388,7 @@ export const PhonePreview: React.FC<PhonePreviewProps> = ({
                 apps={apps}
                 tiles={tiles}
                 config={config}
+                forceDark={true}
                 onBackToStart={() => onChangeViewMode('start')}
                 onLaunchApp={onLaunchApp}
                 onTogglePin={onTogglePinApp}

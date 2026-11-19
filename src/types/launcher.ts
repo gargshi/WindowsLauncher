@@ -126,6 +126,7 @@ export interface LauncherConfig {
   fontScale: number; // 0.8 to 1.4
   wallpaperId: string;
   customWallpaperColor?: string;
+  tileWindowMode: boolean;
   showStatusBar: boolean;
   parallaxDepth: boolean;
   preferredDialerPackage: string;

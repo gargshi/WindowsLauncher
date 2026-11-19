@@ -7,6 +7,7 @@ interface AppDrawerProps {
   apps: AppDefinition[];
   tiles: TileItem[];
   config: LauncherConfig;
+  forceDark?: boolean;
   onBackToStart: () => void;
   onLaunchApp: (app: AppDefinition) => void;
   onTogglePin: (app: AppDefinition) => void;
@@ -19,6 +20,7 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
   apps,
   tiles,
   config,
+  forceDark = true,
   onBackToStart,
   onLaunchApp,
   onTogglePin,
@@ -63,10 +65,10 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
     }
   };
 
-  const isLight = config.theme === 'light';
+  const isLight = forceDark ? false : config.theme === 'light';
 
   return (
-    <div className="relative h-full w-full flex flex-col">
+    <div className="relative h-full w-full flex flex-col bg-black">
       {/* Header & Search */}
       <div className="px-4 pt-2 pb-3 space-y-2.5">
         <div className="flex items-center justify-between">

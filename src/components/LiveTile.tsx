@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import { ArrowDown, ArrowUp, Maximize2, SlidersHorizontal, X } from 'lucide-react';
 import type { AppDefinition, LauncherConfig, TileItem, TileSize } from '../types/launcher';
 import { IconRenderer } from './IconRenderer';
@@ -9,6 +9,9 @@ interface LiveTileProps {
   config: LauncherConfig;
   isSelected: boolean;
   isEditMode: boolean;
+  wallpaperStyle?: React.CSSProperties;
+  displaySize?: { width: number; height: number };
+  tilesLayoutKey?: string;
   onLaunchApp: (app: AppDefinition) => void;
   onSelectTile: (tileId: string) => void;
   onCycleSize: (tileId: string) => void;
@@ -56,6 +59,9 @@ export const LiveTile: React.FC<LiveTileProps> = ({
   config,
   isSelected,
   isEditMode,
+  wallpaperStyle,
+  displaySize,
+  tilesLayoutKey,
   onLaunchApp,
   onSelectTile,
   onCycleSize,
@@ -63,6 +69,26 @@ export const LiveTile: React.FC<LiveTileProps> = ({
   onMoveTile,
   onLongPressStart,
 }) => {
+  const tileRef = useRef<HTMLDivElement | null>(null);
+  const [tileOffset, setTileOffset] = useState({ left: 0, top: 0 });
+  const isWindowMode = Boolean(config.tileWindowMode && wallpaperStyle);
+
+  useLayoutEffect(() => {
+    if (!isWindowMode || !tileRef.current) return;
+    const el = tileRef.current;
+    setTileOffset({ left: el.offsetLeft, top: el.offsetTop });
+  }, [
+    isWindowMode,
+    config.gridColumns,
+    config.tileGap,
+    config.fontScale,
+    tile.size,
+    tile.order,
+    displaySize?.width,
+    displaySize?.height,
+    tilesLayoutKey,
+  ]);
+
   const hasGlobalTileColor = config.tileColor && config.tileColor !== 'accent';
   const effectiveColor =
     tile.customColor && tile.customColor !== 'accent'
@@ -79,8 +105,32 @@ export const LiveTile: React.FC<LiveTileProps> = ({
   let backgroundStyle: React.CSSProperties = {};
   let textColor = '#FFFFFF';
   let borderStyle = 'none';
+  let windowTintColor = 'transparent';
 
-  if (config.tileSurface === 'solid') {
+  if (isWindowMode) {
+    backgroundStyle = {
+      backgroundColor: '#000000',
+    };
+    const tintAlpha =
+      config.tileSurface === 'outline'
+        ? 0.08
+        : config.tileSurface === 'parallax'
+        ? 0.14
+        : Math.min(0.52, Math.max(0.14, config.tileOpacity * 0.48));
+
+    if (config.tileSurface === 'parallax' && !tile.customColor && !hasGlobalTileColor) {
+      windowTintColor = `rgba(0, 0, 0, ${tintAlpha})`;
+    } else {
+      windowTintColor = hexToRgba(effectiveColor, tintAlpha);
+    }
+
+    if (config.tileSurface === 'outline') {
+      borderStyle = `1.5px solid ${effectiveColor}`;
+    } else if (config.tileSurface === 'glass' || config.tileSurface === 'parallax') {
+      borderStyle = '1px solid rgba(255,255,255,0.16)';
+    }
+    textColor = '#FFFFFF';
+  } else if (config.tileSurface === 'solid') {
     backgroundStyle = {
       backgroundColor: effectiveColor,
     };
@@ -253,6 +303,7 @@ export const LiveTile: React.FC<LiveTileProps> = ({
 
   return (
     <div
+      ref={tileRef}
       className={`${spanClass} relative select-none ${
         isEditMode ? 'tile-editing' : ''
       }`}
@@ -286,7 +337,33 @@ export const LiveTile: React.FC<LiveTileProps> = ({
           border: isSelected ? `2px solid ${config.accentColor}` : borderStyle,
         }}
       >
-        {renderTileFace()}
+        {isWindowMode && wallpaperStyle && (
+          <>
+            <div
+              aria-hidden="true"
+              className="absolute pointer-events-none"
+              style={{
+                width: displaySize?.width ? `${displaySize.width}px` : '100vw',
+                height: displaySize?.height ? `${displaySize.height}px` : '100dvh',
+                left: `${-tileOffset.left}px`,
+                top: `calc(${-tileOffset.top}px + var(--wp-scroll-y, 0px))`,
+                ...wallpaperStyle,
+              }}
+            />
+            <div
+              aria-hidden="true"
+              className="absolute inset-0 pointer-events-none"
+              style={{ backgroundColor: windowTintColor }}
+            />
+            <div
+              aria-hidden="true"
+              className="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/45 via-transparent to-black/10"
+            />
+          </>
+        )}
+        <div className={`relative z-10 h-full w-full ${isWindowMode ? 'drop-shadow-[0_1px_2px_rgba(0,0,0,0.65)]' : ''}`}>
+          {renderTileFace()}
+        </div>
       </div>
 
       {/* Metro Edit Mode Floating Controls */}

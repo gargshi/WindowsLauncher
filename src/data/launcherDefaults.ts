@@ -202,6 +202,7 @@ export const DEFAULT_CONFIG: LauncherConfig = {
   labelAlignment: 'bottom-left',
   fontScale: 1.0,
   wallpaperId: 'oxygen-obsidian',
+  tileWindowMode: true,
   showStatusBar: true,
   parallaxDepth: true,
   preferredDialerPackage: 'com.google.android.dialer',
