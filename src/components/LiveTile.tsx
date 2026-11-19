@@ -14,6 +14,7 @@ interface LiveTileProps {
   tilesLayoutKey?: string;
   onLaunchApp: (app: AppDefinition) => void;
   onSelectTile: (tileId: string) => void;
+  onInspectTile: (tileId: string) => void;
   onCycleSize: (tileId: string) => void;
   onUnpinTile: (tileId: string) => void;
   onMoveTile: (tileId: string, direction: -1 | 1) => void;
@@ -64,6 +65,7 @@ export const LiveTile: React.FC<LiveTileProps> = ({
   tilesLayoutKey,
   onLaunchApp,
   onSelectTile,
+  onInspectTile,
   onCycleSize,
   onUnpinTile,
   onMoveTile,
@@ -226,6 +228,16 @@ export const LiveTile: React.FC<LiveTileProps> = ({
     const showInlineCount = isPhoneOrMessages && hasCount;
     const showCornerBadge = !isPhoneOrMessages && hasCount;
 
+    const isCoreLauncherApp =
+      app.id === 'phone' || app.id === 'messages' || app.id === 'contacts';
+    const wantsOriginalIcon =
+      tile.iconSource === 'original' ||
+      (tile.iconSource !== 'launcher' &&
+        (isCoreLauncherApp ? Boolean(config.useOriginalCommunicationIcons) : true));
+    const showNativeIcon = Boolean(
+      app.nativeIconBase64 && !tile.customIcon && wantsOriginalIcon
+    );
+
     return (
       <div className="relative h-full w-full p-2 flex flex-col justify-between">
         {showCornerBadge && (
@@ -242,7 +254,7 @@ export const LiveTile: React.FC<LiveTileProps> = ({
             showInlineCount ? (isSmall ? 'gap-1.5' : 'gap-2.5') : ''
           } ${isSmall ? '' : isWide ? 'pb-1' : 'pb-2'}`}
         >
-          {app.nativeIconBase64 && !tile.customIcon ? (
+          {showNativeIcon && app.nativeIconBase64 ? (
             <img
               src={app.nativeIconBase64}
               alt={`${effectiveLabel} icon`}
@@ -383,10 +395,10 @@ export const LiveTile: React.FC<LiveTileProps> = ({
 
           <button
             type="button"
-            aria-label={`Inspect ${effectiveLabel}`}
+            aria-label={`Customize ${effectiveLabel}`}
             onClick={(e) => {
               e.stopPropagation();
-              onSelectTile(tile.id);
+              onInspectTile(tile.id);
             }}
             className="pointer-events-auto absolute -top-1.5 -right-1.5 w-6 h-6 rounded-full bg-zinc-900 text-white border border-white/25 shadow-md flex items-center justify-center hover:bg-zinc-700 transition-colors"
           >

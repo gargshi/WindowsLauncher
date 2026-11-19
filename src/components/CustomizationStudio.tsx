@@ -951,6 +951,67 @@ export const CustomizationStudio: React.FC<CustomizationStudioProps> = ({
                   </div>
                 </div>
               </div>
+              <div className="p-3.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50/70 dark:bg-zinc-950/60 flex items-center justify-between gap-4 flex-wrap">
+                <div className="min-w-0">
+                  <div className="text-xs font-semibold text-slate-900 dark:text-white">
+                    Phone &amp; Messages Icons
+                  </div>
+                  <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5">
+                    Use the launcher&apos;s minimalist icon set by default, or switch to your device&apos;s original Phone &amp; Messages app icons.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-200/70 dark:bg-zinc-900 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onUpdateConfig({ useOriginalCommunicationIcons: false });
+                      tiles.forEach((t) => {
+                        if (['phone', 'messages', 'contacts'].includes(t.appId) && t.iconSource) {
+                          onUpdateTile(t.id, { iconSource: undefined });
+                        }
+                      });
+                      showTempMessage('Phone & Messages switched to Launcher Icon Set.');
+                    }}
+                    className={`min-h-[34px] px-3 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
+                      !config.useOriginalCommunicationIcons
+                        ? 'text-white shadow-sm'
+                        : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                    style={
+                      !config.useOriginalCommunicationIcons
+                        ? { backgroundColor: config.accentColor }
+                        : undefined
+                    }
+                  >
+                    Launcher Icons
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onUpdateConfig({ useOriginalCommunicationIcons: true });
+                      tiles.forEach((t) => {
+                        if (['phone', 'messages', 'contacts'].includes(t.appId) && t.iconSource) {
+                          onUpdateTile(t.id, { iconSource: undefined });
+                        }
+                      });
+                      showTempMessage('Phone & Messages switched to Original App Icons.');
+                    }}
+                    className={`min-h-[34px] px-3 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
+                      config.useOriginalCommunicationIcons
+                        ? 'text-white shadow-sm'
+                        : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                    style={
+                      config.useOriginalCommunicationIcons
+                        ? { backgroundColor: config.accentColor }
+                        : undefined
+                    }
+                  >
+                    Original Icons
+                  </button>
+                </div>
+              </div>
             </section>
 
             <hr className="border-slate-200 dark:border-white/10" />
@@ -1153,15 +1214,30 @@ export const CustomizationStudio: React.FC<CustomizationStudioProps> = ({
                         borderRadius: `${Math.min(50, config.tileRadius)}%`,
                       }}
                     >
-                      <IconRenderer
-                        iconName={selectedTile.customIcon || selectedApp.icon}
-                        styleMode={config.iconStyle}
-                        scale={0.85}
-                        strokeWidth={config.iconStrokeWidth}
-                        accentColor={config.accentColor}
-                        foregroundColor="#FFFFFF"
-                        baseSizePx={24}
-                      />
+                      {selectedApp.nativeIconBase64 &&
+                      !selectedTile.customIcon &&
+                      (selectedTile.iconSource === 'original' ||
+                        (selectedTile.iconSource !== 'launcher' &&
+                          (['phone', 'messages', 'contacts'].includes(selectedApp.id)
+                            ? Boolean(config.useOriginalCommunicationIcons)
+                            : true))) ? (
+                        <img
+                          src={selectedApp.nativeIconBase64}
+                          alt={`${selectedTile.customLabel || selectedApp.name} icon`}
+                          referrerPolicy="no-referrer"
+                          className="w-7 h-7 object-contain rounded-md"
+                        />
+                      ) : (
+                        <IconRenderer
+                          iconName={selectedTile.customIcon || selectedApp.icon}
+                          styleMode={config.iconStyle}
+                          scale={0.85}
+                          strokeWidth={config.iconStrokeWidth}
+                          accentColor={config.accentColor}
+                          foregroundColor="#FFFFFF"
+                          baseSizePx={24}
+                        />
+                      )}
                     </div>
                     <div className="min-w-0">
                       <h2 className="text-base font-semibold text-slate-900 dark:text-white truncate">
@@ -1334,6 +1410,73 @@ export const CustomizationStudio: React.FC<CustomizationStudioProps> = ({
                   </div>
                 </div>
 
+                {/* Per-Tile Icon Source (Launcher Set vs Original App Icon) */}
+                {(selectedApp.nativeIconBase64 ||
+                  ['phone', 'messages', 'contacts'].includes(selectedApp.id)) && (
+                  <div className="p-3.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50/70 dark:bg-zinc-950/60 flex items-center justify-between gap-3 flex-wrap">
+                    <div>
+                      <div className="text-xs font-semibold text-slate-900 dark:text-white">
+                        Tile Icon Source
+                      </div>
+                      <div className="text-[11px] text-slate-500 dark:text-zinc-400">
+                        Switch between the launcher&apos;s glyph set and the original Android app icon.
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-200/70 dark:bg-zinc-900 shrink-0">
+                      {(() => {
+                        const isCore = ['phone', 'messages', 'contacts'].includes(selectedApp.id);
+                        const usingOriginal =
+                          selectedTile.iconSource === 'original' ||
+                          (selectedTile.iconSource !== 'launcher' &&
+                            (isCore ? Boolean(config.useOriginalCommunicationIcons) : true));
+                        return (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                onUpdateTile(selectedTile.id, { iconSource: 'launcher' })
+                              }
+                              className={`min-h-[32px] px-2.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
+                                !usingOriginal || Boolean(selectedTile.customIcon)
+                                  ? 'text-white shadow-sm'
+                                  : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
+                              }`}
+                              style={
+                                !usingOriginal || Boolean(selectedTile.customIcon)
+                                  ? { backgroundColor: config.accentColor }
+                                  : undefined
+                              }
+                            >
+                              Launcher Icon
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                onUpdateTile(selectedTile.id, {
+                                  iconSource: 'original',
+                                  customIcon: undefined,
+                                })
+                              }
+                              className={`min-h-[32px] px-2.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
+                                usingOriginal && !selectedTile.customIcon
+                                  ? 'text-white shadow-sm'
+                                  : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
+                              }`}
+                              style={
+                                usingOriginal && !selectedTile.customIcon
+                                  ? { backgroundColor: config.accentColor }
+                                  : undefined
+                              }
+                            >
+                              Original Icon
+                            </button>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                )}
+
                 {/* Per-Tile Custom Icon Picker */}
                 <div className="space-y-2.5">
                   <div className="flex items-center justify-between">
@@ -1360,7 +1503,12 @@ export const CustomizationStudio: React.FC<CustomizationStudioProps> = ({
                           type="button"
                           title={meta.label}
                           aria-label={`Use ${meta.label} icon`}
-                          onClick={() => onUpdateTile(selectedTile.id, { customIcon: iconKey })}
+                          onClick={() =>
+                            onUpdateTile(selectedTile.id, {
+                              customIcon: iconKey,
+                              iconSource: 'launcher',
+                            })
+                          }
                           className={`h-10 rounded-xl border flex items-center justify-center transition-colors ${
                             active
                               ? 'text-white border-transparent'

@@ -152,6 +152,15 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
                   const isPinned = pinnedAppIds.has(app.id);
                   const matchingTile = tiles.find((t) => t.appId === app.id);
                   const rowIcon = matchingTile?.customIcon || app.icon;
+                  const isCoreLauncherApp =
+                    app.id === 'phone' || app.id === 'messages' || app.id === 'contacts';
+                  const wantsOriginalIcon =
+                    matchingTile?.iconSource === 'original' ||
+                    (matchingTile?.iconSource !== 'launcher' &&
+                      (isCoreLauncherApp ? Boolean(config.useOriginalCommunicationIcons) : true));
+                  const showNativeIcon = Boolean(
+                    app.nativeIconBase64 && !matchingTile?.customIcon && wantsOriginalIcon
+                  );
 
                   return (
                     <div
@@ -178,7 +187,7 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
                             borderRadius: `${Math.min(50, config.tileRadius)}%`,
                           }}
                         >
-                          {app.nativeIconBase64 && !matchingTile?.customIcon ? (
+                          {showNativeIcon && app.nativeIconBase64 ? (
                             <img
                               src={app.nativeIconBase64}
                               alt={`${app.name} icon`}

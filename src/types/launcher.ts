@@ -87,6 +87,7 @@ export interface TileItem {
   customLabel?: string;
   customIcon?: IconName;
   customColor?: string; // Hex color or 'accent'
+  iconSource?: 'launcher' | 'original';
   liveEnabled: boolean;
   badgeCount?: number;
   order: number;
@@ -121,6 +122,7 @@ export interface LauncherConfig {
   iconStyle: IconStyle;
   iconScale: number; // 0.75 to 1.25
   iconStrokeWidth: number; // 1.25 | 1.75 | 2.25
+  useOriginalCommunicationIcons: boolean;
   labelVisibility: LabelVisibility;
   labelAlignment: LabelAlignment;
   fontScale: number; // 0.8 to 1.4

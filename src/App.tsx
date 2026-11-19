@@ -282,7 +282,14 @@ export default function App() {
     setSelectedTileId(tileId);
     if (isEditMode) {
       setStudioTab('tile');
+      setMobileStudioOpen(true);
     }
+  };
+
+  const handleInspectTile = (tileId: string) => {
+    setSelectedTileId(tileId);
+    setStudioTab('tile');
+    setMobileStudioOpen(true);
   };
 
   const handleApplyPreset = (preset: LauncherPreset) => {
@@ -473,6 +480,7 @@ export default function App() {
             customWallpaperImage={customWallpaperImage}
             onChangeViewMode={setViewMode}
             onSelectTile={handleSelectTile}
+            onInspectTile={handleInspectTile}
             onToggleEditMode={() => setIsEditMode((v) => !v)}
             onLaunchApp={handleLaunchApp}
             onCloseApp={() => setActiveApp(null)}

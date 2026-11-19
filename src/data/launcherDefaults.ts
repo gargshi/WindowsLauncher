@@ -198,6 +198,7 @@ export const DEFAULT_CONFIG: LauncherConfig = {
   iconStyle: 'metro',
   iconScale: 1.0,
   iconStrokeWidth: 1.75,
+  useOriginalCommunicationIcons: false,
   labelVisibility: 'all',
   labelAlignment: 'bottom-left',
   fontScale: 1.0,

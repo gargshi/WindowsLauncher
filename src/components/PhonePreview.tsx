@@ -35,6 +35,7 @@ interface PhonePreviewProps {
   customWallpaperImage: string | null;
   onChangeViewMode: (mode: PhoneViewMode) => void;
   onSelectTile: (tileId: string) => void;
+  onInspectTile: (tileId: string) => void;
   onToggleEditMode: () => void;
   onLaunchApp: (app: AppDefinition) => void;
   onCloseApp: () => void;
@@ -60,6 +61,7 @@ export const PhonePreview: React.FC<PhonePreviewProps> = ({
   customWallpaperImage,
   onChangeViewMode,
   onSelectTile,
+  onInspectTile,
   onToggleEditMode,
   onLaunchApp,
   onCloseApp,
@@ -329,6 +331,7 @@ export const PhonePreview: React.FC<PhonePreviewProps> = ({
                         tilesLayoutKey={tilesLayoutKey}
                         onLaunchApp={onLaunchApp}
                         onSelectTile={onSelectTile}
+                        onInspectTile={onInspectTile}
                         onCycleSize={onCycleTileSize}
                         onUnpinTile={onUnpinTile}
                         onMoveTile={onMoveTile}
