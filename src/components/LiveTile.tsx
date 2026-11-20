@@ -9,16 +9,19 @@ interface LiveTileProps {
   config: LauncherConfig;
   isSelected: boolean;
   isEditMode: boolean;
+  isDragPlaceholder?: boolean;
+  isDragGhost?: boolean;
   wallpaperStyle?: React.CSSProperties;
   displaySize?: { width: number; height: number };
   tilesLayoutKey?: string;
   onLaunchApp: (app: AppDefinition) => void;
-  onSelectTile: (tileId: string) => void;
+  onSelectTile: (tileId: string, openInspector?: boolean) => void;
   onInspectTile: (tileId: string) => void;
   onCycleSize: (tileId: string) => void;
   onUnpinTile: (tileId: string) => void;
   onMoveTile: (tileId: string, direction: -1 | 1) => void;
-  onLongPressStart: () => void;
+  onStartTileDrag?: (tileId: string, clientX: number, clientY: number, rect: DOMRect) => void;
+  shouldSuppressTap?: () => boolean;
 }
 
 function isLightHex(hex: string): boolean {
@@ -60,6 +63,8 @@ export const LiveTile: React.FC<LiveTileProps> = ({
   config,
   isSelected,
   isEditMode,
+  isDragPlaceholder = false,
+  isDragGhost = false,
   wallpaperStyle,
   displaySize,
   tilesLayoutKey,
@@ -69,9 +74,13 @@ export const LiveTile: React.FC<LiveTileProps> = ({
   onCycleSize,
   onUnpinTile,
   onMoveTile,
-  onLongPressStart,
+  onStartTileDrag,
+  shouldSuppressTap,
 }) => {
   const tileRef = useRef<HTMLDivElement | null>(null);
+  const pressTimerRef = useRef<number | null>(null);
+  const pressOriginRef = useRef<{ x: number; y: number } | null>(null);
+  const draggedThisPressRef = useRef(false);
   const [tileOffset, setTileOffset] = useState({ left: 0, top: 0 });
   const isWindowMode = Boolean(config.tileWindowMode && wallpaperStyle);
 
@@ -201,17 +210,43 @@ export const LiveTile: React.FC<LiveTileProps> = ({
   const isWide = tile.size === '2x1' || tile.size === '4x2';
   const baseIconPx = tile.size === '4x2' ? 34 : tile.size === '2x2' ? 32 : isSmall ? 24 : 26;
 
-  // Press/Hold detection for Metro Edit Mode
-  let pressTimer: number | null = null;
-  const handlePointerDown = () => {
-    pressTimer = window.setTimeout(() => {
-      onLongPressStart();
-    }, 520);
+  const clearPressTimer = () => {
+    if (pressTimerRef.current !== null) {
+      window.clearTimeout(pressTimerRef.current);
+      pressTimerRef.current = null;
+    }
+    pressOriginRef.current = null;
   };
-  const handlePointerUpOrLeave = () => {
-    if (pressTimer) {
-      window.clearTimeout(pressTimer);
-      pressTimer = null;
+
+  const beginHoldTracking = (clientX: number, clientY: number) => {
+    if (isDragGhost) return;
+    clearPressTimer();
+    draggedThisPressRef.current = false;
+    pressOriginRef.current = { x: clientX, y: clientY };
+    const holdDelay = isEditMode ? 190 : 380;
+    pressTimerRef.current = window.setTimeout(() => {
+      pressTimerRef.current = null;
+      const origin = pressOriginRef.current;
+      pressOriginRef.current = null;
+      if (!tileRef.current || !origin || !onStartTileDrag) return;
+      draggedThisPressRef.current = true;
+      onStartTileDrag(
+        tile.id,
+        origin.x,
+        origin.y,
+        tileRef.current.getBoundingClientRect()
+      );
+    }, holdDelay);
+  };
+
+  const handleHoldMove = (clientX: number, clientY: number) => {
+    if (!pressTimerRef.current || !pressOriginRef.current) return;
+    const dist = Math.hypot(
+      clientX - pressOriginRef.current.x,
+      clientY - pressOriginRef.current.y
+    );
+    if (dist > 10) {
+      clearPressTimer();
     }
   };
 
@@ -316,18 +351,50 @@ export const LiveTile: React.FC<LiveTileProps> = ({
   return (
     <div
       ref={tileRef}
-      className={`${spanClass} relative select-none ${
-        isEditMode ? 'tile-editing' : ''
+      data-tile-id={isDragGhost ? undefined : tile.id}
+      onContextMenu={(e) => e.preventDefault()}
+      className={`${isDragGhost ? 'w-full h-full' : spanClass} relative select-none ${
+        isEditMode && !isDragPlaceholder && !isDragGhost ? 'tile-editing' : ''
+      } ${isDragPlaceholder ? 'opacity-30 scale-[0.95] transition-all duration-150' : ''} ${
+        isDragGhost ? 'scale-[1.04] shadow-2xl ring-2 ring-white/85 pointer-events-none' : ''
       }`}
-      onPointerDown={handlePointerDown}
-      onPointerUp={handlePointerUpOrLeave}
-      onPointerLeave={handlePointerUpOrLeave}
+      onPointerDown={(e) => {
+        if (e.pointerType === 'touch') return;
+        if (e.button !== 0) return;
+        beginHoldTracking(e.clientX, e.clientY);
+      }}
+      onPointerMove={(e) => {
+        if (e.pointerType === 'touch') return;
+        handleHoldMove(e.clientX, e.clientY);
+      }}
+      onPointerUp={clearPressTimer}
+      onPointerCancel={clearPressTimer}
+      onPointerLeave={clearPressTimer}
+      onTouchStart={(e) => {
+        if (e.touches.length !== 1) {
+          clearPressTimer();
+          return;
+        }
+        const t = e.touches[0];
+        beginHoldTracking(t.clientX, t.clientY);
+      }}
+      onTouchMove={(e) => {
+        const t = e.touches[0];
+        if (t) handleHoldMove(t.clientX, t.clientY);
+      }}
+      onTouchEnd={clearPressTimer}
+      onTouchCancel={clearPressTimer}
     >
       <div
         role="button"
-        tabIndex={0}
+        tabIndex={isDragGhost ? -1 : 0}
         aria-label={`${effectiveLabel} tile`}
         onClick={() => {
+          if (isDragGhost) return;
+          if (draggedThisPressRef.current || shouldSuppressTap?.()) {
+            draggedThisPressRef.current = false;
+            return;
+          }
           onSelectTile(tile.id);
           if (!isEditMode) {
             onLaunchApp(app);
@@ -341,15 +408,19 @@ export const LiveTile: React.FC<LiveTileProps> = ({
           }
         }}
         className={`relative h-full w-full overflow-hidden cursor-pointer transition-transform duration-150 active:scale-[0.96] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ${
-          isSelected && isEditMode ? 'ring-2 ring-white/90' : ''
-        }`}
+          isSelected && isEditMode && !isDragPlaceholder ? 'ring-2 ring-white/90' : ''
+        } ${isDragPlaceholder ? 'border-2 border-dashed border-white/60' : ''}`}
         style={{
           ...backgroundStyle,
           borderRadius: `${Math.min(50, Math.max(0, config.tileRadius))}%`,
-          border: isSelected ? `2px solid ${config.accentColor}` : borderStyle,
+          border: isDragPlaceholder
+            ? '2px dashed rgba(255,255,255,0.65)'
+            : isSelected
+            ? `2px solid ${config.accentColor}`
+            : borderStyle,
         }}
       >
-        {isWindowMode && wallpaperStyle && (
+        {isWindowMode && wallpaperStyle && !isDragPlaceholder && (
           <>
             <div
               aria-hidden="true"
@@ -379,8 +450,12 @@ export const LiveTile: React.FC<LiveTileProps> = ({
       </div>
 
       {/* Metro Edit Mode Floating Controls */}
-      {isEditMode && (
-        <div className="absolute inset-0 pointer-events-none z-20">
+      {isEditMode && !isDragPlaceholder && !isDragGhost && (
+        <div
+          className="absolute inset-0 pointer-events-none z-20"
+          onPointerDown={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
+        >
           <button
             type="button"
             aria-label={`Unpin ${effectiveLabel}`}

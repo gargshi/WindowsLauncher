@@ -666,6 +666,53 @@ export const CustomizationStudio: React.FC<CustomizationStudioProps> = ({
                 </div>
               </div>
 
+              {/* Screen Swipe Sliding Transition Setting */}
+              <div className="p-3.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50/70 dark:bg-zinc-950/60 flex items-center justify-between gap-4 flex-wrap">
+                <div className="min-w-0">
+                  <div className="text-xs font-semibold text-slate-900 dark:text-white">
+                    App List Sliding Transition
+                  </div>
+                  <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5">
+                    Play a smooth horizontal slide animation when swiping between the Start Screen and App List.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-200/70 dark:bg-zinc-900 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => onUpdateConfig({ swipeTransitionEnabled: true })}
+                    className={`min-h-[34px] px-3 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
+                      config.swipeTransitionEnabled
+                        ? 'text-white shadow-sm'
+                        : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                    style={
+                      config.swipeTransitionEnabled
+                        ? { backgroundColor: config.accentColor }
+                        : undefined
+                    }
+                  >
+                    Slide
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onUpdateConfig({ swipeTransitionEnabled: false })}
+                    className={`min-h-[34px] px-3 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
+                      !config.swipeTransitionEnabled
+                        ? 'text-white shadow-sm'
+                        : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                    style={
+                      !config.swipeTransitionEnabled
+                        ? { backgroundColor: config.accentColor }
+                        : undefined
+                    }
+                  >
+                    Instant
+                  </button>
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
                 {customWallpaperImage && (
                   <div

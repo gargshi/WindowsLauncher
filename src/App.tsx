@@ -251,6 +251,21 @@ export default function App() {
     });
   };
 
+  const handleReorderTile = (draggedTileId: string, targetIndex: number) => {
+    setTiles((prev) => {
+      const sorted = [...prev].sort((a, b) => a.order - b.order);
+      const currentIndex = sorted.findIndex((t) => t.id === draggedTileId);
+      if (currentIndex < 0) return prev;
+      const others = sorted.filter((t) => t.id !== draggedTileId);
+      const clampedIndex = Math.max(0, Math.min(others.length, targetIndex));
+      if (clampedIndex === currentIndex) return prev;
+      const movedTile = sorted[currentIndex];
+      const next = [...others];
+      next.splice(clampedIndex, 0, movedTile);
+      return next.map((t, idx) => ({ ...t, order: idx }));
+    });
+  };
+
   const handleTogglePinApp = (app: AppDefinition) => {
     const existing = tiles.find((t) => t.appId === app.id);
     if (existing) {
@@ -278,9 +293,9 @@ export default function App() {
     }
   };
 
-  const handleSelectTile = (tileId: string) => {
+  const handleSelectTile = (tileId: string, openInspector = true) => {
     setSelectedTileId(tileId);
-    if (isEditMode) {
+    if (isEditMode && openInspector) {
       setStudioTab('tile');
       setMobileStudioOpen(true);
     }
@@ -482,11 +497,13 @@ export default function App() {
             onSelectTile={handleSelectTile}
             onInspectTile={handleInspectTile}
             onToggleEditMode={() => setIsEditMode((v) => !v)}
+            onEnterEditMode={() => setIsEditMode(true)}
             onLaunchApp={handleLaunchApp}
             onCloseApp={() => setActiveApp(null)}
             onCycleTileSize={handleCycleTileSize}
             onUnpinTile={handleUnpinTile}
             onMoveTile={handleMoveTile}
+            onReorderTile={handleReorderTile}
             onTogglePinApp={handleTogglePinApp}
             onInspectAppTile={handleInspectAppTile}
             onCycleAlertMode={handleCycleAlertMode}

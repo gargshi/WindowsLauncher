@@ -129,6 +129,7 @@ export interface LauncherConfig {
   wallpaperId: string;
   customWallpaperColor?: string;
   tileWindowMode: boolean;
+  swipeTransitionEnabled: boolean;
   showStatusBar: boolean;
   parallaxDepth: boolean;
   preferredDialerPackage: string;
