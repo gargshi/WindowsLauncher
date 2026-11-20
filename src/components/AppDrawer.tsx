@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, Pin, PinOff, Search, SlidersHorizontal } from 'lucide-react';
 import type { AppDefinition, LauncherConfig, TileItem } from '../types/launcher';
 import { IconRenderer } from './IconRenderer';
@@ -8,6 +8,7 @@ interface AppDrawerProps {
   tiles: TileItem[];
   config: LauncherConfig;
   forceDark?: boolean;
+  isOpen?: boolean;
   onBackToStart: () => void;
   onLaunchApp: (app: AppDefinition) => void;
   onTogglePin: (app: AppDefinition) => void;
@@ -21,6 +22,7 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
   tiles,
   config,
   forceDark = true,
+  isOpen = true,
   onBackToStart,
   onLaunchApp,
   onTogglePin,
@@ -29,6 +31,12 @@ export const AppDrawer: React.FC<AppDrawerProps> = ({
   const [query, setQuery] = useState('');
   const [showJumpGrid, setShowJumpGrid] = useState(false);
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  useEffect(() => {
+    if (!isOpen) {
+      setShowJumpGrid(false);
+    }
+  }, [isOpen]);
 
   const pinnedAppIds = useMemo(() => new Set(tiles.map((t) => t.appId)), [tiles]);
 

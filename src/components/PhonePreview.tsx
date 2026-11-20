@@ -647,6 +647,7 @@ export const PhonePreview: React.FC<PhonePreviewProps> = ({
                   tiles={tiles}
                   config={config}
                   forceDark={true}
+                  isOpen={viewMode === 'apps'}
                   onBackToStart={() => onChangeViewMode('start')}
                   onLaunchApp={onLaunchApp}
                   onTogglePin={onTogglePinApp}

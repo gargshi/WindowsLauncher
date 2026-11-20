@@ -437,6 +437,7 @@ jobs:
 
           import android.graphics.Color;
           import android.os.Bundle;
+          import androidx.activity.OnBackPressedCallback;
           import com.getcapacitor.BridgeActivity;
 
           public class MainActivity extends BridgeActivity {
@@ -446,6 +447,20 @@ jobs:
                   super.onCreate(savedInstanceState);
                   getWindow().setStatusBarColor(Color.parseColor("#09090B"));
                   getWindow().setNavigationBarColor(Color.parseColor("#09090B"));
+
+                  getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+                      @Override
+                      public void handleOnBackPressed() {
+                          if (getBridge() != null && getBridge().getWebView() != null) {
+                              getBridge().getWebView().post(() ->
+                                  getBridge().getWebView().evaluateJavascript(
+                                      "window.dispatchEvent(new CustomEvent('oxygentile-android-back'));",
+                                      null
+                                  )
+                              );
+                          }
+                      }
+                  });
               }
           }
           JAVA

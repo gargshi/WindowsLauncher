@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import { CustomizationStudio } from './components/CustomizationStudio';
 import { PhonePreview } from './components/PhonePreview';
@@ -191,6 +191,67 @@ export default function App() {
       document.removeEventListener('contextmenu', handleContextMenu);
     };
   }, []);
+
+  const backStateRef = useRef({
+    viewMode,
+    activeApp,
+    mobileStudioOpen,
+    isEditMode,
+  });
+  backStateRef.current = { viewMode, activeApp, mobileStudioOpen, isEditMode };
+
+  // Handle Android / PWA back navigation and disable back action on the Start Screen
+  useEffect(() => {
+    const handleBackAction = () => {
+      const current = backStateRef.current;
+      if (current.mobileStudioOpen) {
+        setMobileStudioOpen(false);
+        return;
+      }
+      if (current.activeApp) {
+        setActiveApp(null);
+        return;
+      }
+      if (current.viewMode === 'apps') {
+        setViewMode('start');
+        return;
+      }
+      if (current.isEditMode) {
+        setIsEditMode(false);
+      }
+    };
+
+    const onNativeBack = () => {
+      handleBackAction();
+    };
+    window.addEventListener('oxygentile-android-back', onNativeBack);
+
+    const isStandalone =
+      typeof window !== 'undefined' &&
+      window.matchMedia?.('(display-mode: standalone)').matches;
+
+    if (isStandalone && !isNativeAndroid) {
+      window.history.pushState({ oxygentileGuard: true }, '', window.location.href);
+    }
+
+    const onPopState = () => {
+      handleBackAction();
+      if (isStandalone && !isNativeAndroid) {
+        window.history.pushState({ oxygentileGuard: true }, '', window.location.href);
+      }
+    };
+
+    if (isStandalone && !isNativeAndroid) {
+      window.addEventListener('popstate', onPopState);
+    }
+
+    return () => {
+      window.removeEventListener('oxygentile-android-back', onNativeBack);
+      if (isStandalone && !isNativeAndroid) {
+        window.removeEventListener('popstate', onPopState);
+      }
+    };
+  }, [isNativeAndroid]);
 
   const handleUpdateConfig = (partial: Partial<LauncherConfig>) => {
     setConfig((prev) => ({ ...prev, ...partial }));
