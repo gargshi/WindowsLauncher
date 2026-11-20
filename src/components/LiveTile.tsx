@@ -408,16 +408,12 @@ export const LiveTile: React.FC<LiveTileProps> = ({
           }
         }}
         className={`relative h-full w-full overflow-hidden cursor-pointer transition-transform duration-150 active:scale-[0.96] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ${
-          isSelected && isEditMode && !isDragPlaceholder ? 'ring-2 ring-white/90' : ''
-        } ${isDragPlaceholder ? 'border-2 border-dashed border-white/60' : ''}`}
+          isDragPlaceholder ? 'border-2 border-dashed border-white/60' : ''
+        }`}
         style={{
           ...backgroundStyle,
           borderRadius: `${Math.min(50, Math.max(0, config.tileRadius))}%`,
-          border: isDragPlaceholder
-            ? '2px dashed rgba(255,255,255,0.65)'
-            : isSelected
-            ? `2px solid ${config.accentColor}`
-            : borderStyle,
+          border: isDragPlaceholder ? '2px dashed rgba(255,255,255,0.65)' : borderStyle,
         }}
       >
         {isWindowMode && wallpaperStyle && !isDragPlaceholder && (

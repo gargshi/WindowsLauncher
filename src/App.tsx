@@ -166,6 +166,32 @@ export default function App() {
     return () => window.clearInterval(id);
   }, []);
 
+  // Prevent long-press text selection and copy/paste callout menus on launcher UI & empty areas
+  useEffect(() => {
+    const isEditableTarget = (target: EventTarget | null) =>
+      target instanceof Element &&
+      Boolean(target.closest('input, textarea, [contenteditable="true"]'));
+
+    const handleSelectStart = (e: Event) => {
+      if (!isEditableTarget(e.target)) {
+        e.preventDefault();
+      }
+    };
+
+    const handleContextMenu = (e: MouseEvent) => {
+      if (!isEditableTarget(e.target)) {
+        e.preventDefault();
+      }
+    };
+
+    document.addEventListener('selectstart', handleSelectStart);
+    document.addEventListener('contextmenu', handleContextMenu);
+    return () => {
+      document.removeEventListener('selectstart', handleSelectStart);
+      document.removeEventListener('contextmenu', handleContextMenu);
+    };
+  }, []);
+
   const handleUpdateConfig = (partial: Partial<LauncherConfig>) => {
     setConfig((prev) => ({ ...prev, ...partial }));
   };
@@ -394,7 +420,7 @@ export default function App() {
     : null;
 
   return (
-    <div className="min-h-dvh bg-slate-100 dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 flex flex-col">
+    <div className="min-h-dvh bg-slate-100 dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 flex flex-col select-none">
       {/* Desktop 3-Zone Top Bar */}
       <header className="hidden lg:flex items-center justify-between gap-8 px-8 h-16 border-b border-slate-200 dark:border-white/10 bg-white/85 dark:bg-zinc-950/90 backdrop-blur-md sticky top-0 z-30">
         <button
