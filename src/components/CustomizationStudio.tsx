@@ -468,6 +468,52 @@ export const CustomizationStudio: React.FC<CustomizationStudioProps> = ({
                   />
                 </label>
               </div>
+
+              <div className="p-3.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50/70 dark:bg-zinc-950/60 flex items-center justify-between gap-4 flex-wrap">
+                <div className="min-w-0">
+                  <div className="text-xs font-semibold text-slate-900 dark:text-white">
+                    Tile Borders
+                  </div>
+                  <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5">
+                    Show or disable outer borders across all Start Screen tiles.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-200/70 dark:bg-zinc-900 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => onUpdateConfig({ showTileBorders: true })}
+                    className={`min-h-[34px] px-3 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
+                      config.showTileBorders !== false
+                        ? 'text-white shadow-sm'
+                        : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                    style={
+                      config.showTileBorders !== false
+                        ? { backgroundColor: config.accentColor }
+                        : undefined
+                    }
+                  >
+                    Show Borders
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onUpdateConfig({ showTileBorders: false })}
+                    className={`min-h-[34px] px-3 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
+                      config.showTileBorders === false
+                        ? 'text-white shadow-sm'
+                        : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                    style={
+                      config.showTileBorders === false
+                        ? { backgroundColor: config.accentColor }
+                        : undefined
+                    }
+                  >
+                    Disable All
+                  </button>
+                </div>
+              </div>
             </section>
 
             <hr className="border-slate-200 dark:border-white/10" />
@@ -1452,6 +1498,68 @@ export const CustomizationStudio: React.FC<CustomizationStudioProps> = ({
                         onUpdateTile(selectedTile.id, { customColor: e.target.value })
                       }
                       aria-label="Custom tile color picker"
+                      className="w-8 h-8 rounded-lg border-0 bg-transparent cursor-pointer"
+                    />
+                  </div>
+                </div>
+
+                {/* Per-Tile Border Color Override */}
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-medium text-slate-700 dark:text-zinc-300">
+                      Tile Border Color
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => onUpdateTile(selectedTile.id, { customBorderColor: undefined })}
+                      className="text-[11px] font-medium text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                    >
+                      Use Surface Default
+                    </button>
+                  </div>
+                  {config.showTileBorders === false && (
+                    <div className="px-3 py-2 rounded-xl border border-amber-500/30 bg-amber-500/10 flex items-center justify-between gap-2 text-[11px] text-amber-700 dark:text-amber-300">
+                      <span>Borders are currently disabled for all tiles.</span>
+                      <button
+                        type="button"
+                        onClick={() => onUpdateConfig({ showTileBorders: true })}
+                        className="font-semibold underline whitespace-nowrap shrink-0"
+                      >
+                        Enable Borders
+                      </button>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {[
+                      '#FFFFFF',
+                      '#EB0028',
+                      '#0078D4',
+                      '#0F766E',
+                      '#D97706',
+                      '#4F46E5',
+                      '#71717A',
+                      '#000000',
+                    ].map((hex) => (
+                      <button
+                        key={hex}
+                        type="button"
+                        aria-label={`Set tile border color ${hex}`}
+                        onClick={() => onUpdateTile(selectedTile.id, { customBorderColor: hex })}
+                        className={`w-8 h-8 rounded-lg border transition-transform hover:scale-105 ${
+                          selectedTile.customBorderColor === hex
+                            ? 'ring-2 ring-offset-2 ring-rose-500 border-white'
+                            : 'border-slate-300 dark:border-white/20'
+                        }`}
+                        style={{ backgroundColor: hex }}
+                      />
+                    ))}
+                    <input
+                      type="color"
+                      value={selectedTile.customBorderColor || '#FFFFFF'}
+                      onChange={(e) =>
+                        onUpdateTile(selectedTile.id, { customBorderColor: e.target.value })
+                      }
+                      aria-label="Custom tile border color picker"
                       className="w-8 h-8 rounded-lg border-0 bg-transparent cursor-pointer"
                     />
                   </div>

@@ -82,7 +82,6 @@ export default function App() {
   const [alertMode, setAlertMode] = useState<AlertMode>('ring');
   const [showAlertToast, setShowAlertToast] = useState(false);
   const [mobileStudioOpen, setMobileStudioOpen] = useState(false);
-  const [now, setNow] = useState(() => new Date());
   const [apps, setApps] = useState<AppDefinition[]>(APP_CATALOG);
   const [callingApps, setCallingApps] = useState<CallingAppOption[]>(DEFAULT_CALLING_APPS);
   const { isInstallable, isInstalled, install } = usePWAInstall();
@@ -159,12 +158,6 @@ export default function App() {
       // Ignore storage quota errors
     }
   }, [customWallpaperImage]);
-
-  // Live clock tick every 15 seconds
-  useEffect(() => {
-    const id = window.setInterval(() => setNow(new Date()), 15000);
-    return () => window.clearInterval(id);
-  }, []);
 
   // Prevent long-press text selection and copy/paste callout menus on launcher UI & empty areas
   useEffect(() => {
@@ -578,7 +571,6 @@ export default function App() {
             activeApp={activeApp}
             alertMode={alertMode}
             showAlertToast={showAlertToast}
-            now={now}
             customWallpaperImage={customWallpaperImage}
             onChangeViewMode={setViewMode}
             onSelectTile={handleSelectTile}

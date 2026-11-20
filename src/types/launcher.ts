@@ -87,6 +87,7 @@ export interface TileItem {
   customLabel?: string;
   customIcon?: IconName;
   customColor?: string; // Hex color or 'accent'
+  customBorderColor?: string; // Hex color override for tile border
   iconSource?: 'launcher' | 'original';
   liveEnabled: boolean;
   badgeCount?: number;
@@ -129,8 +130,8 @@ export interface LauncherConfig {
   wallpaperId: string;
   customWallpaperColor?: string;
   tileWindowMode: boolean;
+  showTileBorders: boolean;
   swipeTransitionEnabled: boolean;
-  showStatusBar: boolean;
   parallaxDepth: boolean;
   preferredDialerPackage: string;
 }

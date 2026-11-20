@@ -202,6 +202,13 @@ export const LiveTile: React.FC<LiveTileProps> = ({
     borderStyle = `1.5px solid ${effectiveColor}`;
   }
 
+  const finalBorderStyle =
+    config.showTileBorders === false
+      ? 'none'
+      : tile.customBorderColor
+      ? `1.5px solid ${tile.customBorderColor}`
+      : borderStyle;
+
   const showLabel =
     config.labelVisibility === 'all' ||
     (config.labelVisibility === 'medium-wide' && tile.size !== '1x1');
@@ -413,7 +420,7 @@ export const LiveTile: React.FC<LiveTileProps> = ({
         style={{
           ...backgroundStyle,
           borderRadius: `${Math.min(50, Math.max(0, config.tileRadius))}%`,
-          border: isDragPlaceholder ? '2px dashed rgba(255,255,255,0.65)' : borderStyle,
+          border: isDragPlaceholder ? '2px dashed rgba(255,255,255,0.65)' : finalBorderStyle,
         }}
       >
         {isWindowMode && wallpaperStyle && !isDragPlaceholder && (

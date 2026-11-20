@@ -1,13 +1,11 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   ArrowRight,
-  BatteryCharging,
   Bell,
   BellOff,
   Check,
   Pencil,
   Vibrate,
-  Wifi,
 } from 'lucide-react';
 import { WALLPAPERS } from '../data/launcherDefaults';
 import type {
@@ -31,7 +29,6 @@ interface PhonePreviewProps {
   activeApp: AppDefinition | null;
   alertMode: AlertMode;
   showAlertToast: boolean;
-  now: Date;
   customWallpaperImage: string | null;
   onChangeViewMode: (mode: PhoneViewMode) => void;
   onSelectTile: (tileId: string, openInspector?: boolean) => void;
@@ -69,7 +66,6 @@ export const PhonePreview: React.FC<PhonePreviewProps> = ({
   activeApp,
   alertMode,
   showAlertToast,
-  now,
   customWallpaperImage,
   onChangeViewMode,
   onSelectTile,
@@ -89,7 +85,6 @@ export const PhonePreview: React.FC<PhonePreviewProps> = ({
   const wallpaper = WALLPAPERS.find((w) => w.id === config.wallpaperId) ?? WALLPAPERS[0];
   const isLight = config.theme === 'light';
   const isSolidBlackBackdrop = viewMode === 'apps' || Boolean(config.tileWindowMode);
-  const useLightUiChrome = !isSolidBlackBackdrop && isLight;
 
   const swipeStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
   const displayAreaRef = useRef<HTMLDivElement | null>(null);
@@ -387,12 +382,6 @@ export const PhonePreview: React.FC<PhonePreviewProps> = ({
   const tilesLayoutKey = sortedTiles.map((t) => `${t.id}:${t.size}:${t.order}`).join('|');
   const pinnedAppIds = new Set(tiles.map((t) => t.appId));
 
-  const timeString = now.toLocaleTimeString([], {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  });
-
   const wallpaperStyle: React.CSSProperties =
     config.wallpaperId === 'custom-image' && customWallpaperImage
       ? {
@@ -477,39 +466,6 @@ export const PhonePreview: React.FC<PhonePreviewProps> = ({
                 <BellOff size={14} style={{ color: config.accentColor }} />
               )}
               <span className="capitalize">{alertMode}</span>
-            </div>
-          )}
-
-          {/* Simulated Status Bar + Punch-Hole Camera (Desktop Frame Only) */}
-          {config.showStatusBar && (
-            <div
-              className={`hidden lg:flex relative z-20 px-5 pt-2.5 pb-1.5 items-center justify-between text-[11px] font-mono-tabular font-medium select-none ${
-                useLightUiChrome ? 'text-slate-900' : 'text-white'
-              }`}
-            >
-              <span>{timeString}</span>
-
-              {/* OnePlus 15R Centered Punch-Hole Selfie Camera (Desktop frame) */}
-              <div className="hidden lg:block w-3.5 h-3.5 rounded-full bg-black border border-zinc-800 shadow-inner" />
-
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={onCycleAlertMode}
-                  aria-label={`Alert mode: ${alertMode}`}
-                  className="hover:opacity-75"
-                >
-                  {alertMode === 'ring' && <Bell size={12} />}
-                  {alertMode === 'vibrate' && <Vibrate size={12} />}
-                  {alertMode === 'silent' && <BellOff size={12} />}
-                </button>
-                <span className="text-[10px] font-semibold">5G</span>
-                <Wifi size={12} />
-                <span className="flex items-center gap-0.5">
-                  <BatteryCharging size={13} />
-                  <span>88%</span>
-                </span>
-              </div>
             </div>
           )}
 
@@ -693,7 +649,6 @@ export const PhonePreview: React.FC<PhonePreviewProps> = ({
               <MiniAppOverlay
                 app={activeApp}
                 config={config}
-                now={now}
                 isPinned={pinnedAppIds.has(activeApp.id)}
                 onClose={onCloseApp}
                 onTogglePin={onTogglePinApp}

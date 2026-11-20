@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   ArrowLeft,
   Check,
@@ -15,7 +15,6 @@ import { IconRenderer } from './IconRenderer';
 interface MiniAppOverlayProps {
   app: AppDefinition;
   config: LauncherConfig;
-  now: Date;
   isPinned: boolean;
   onClose: () => void;
   onTogglePin: (app: AppDefinition) => void;
@@ -25,12 +24,15 @@ interface MiniAppOverlayProps {
 export const MiniAppOverlay: React.FC<MiniAppOverlayProps> = ({
   app,
   config,
-  now,
   isPinned,
   onClose,
   onTogglePin,
   onOpenTileInspector,
 }) => {
+  const openedTime = useMemo(
+    () => new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    [app.id]
+  );
   // Phone mini-app state (defaults to Recents)
   const [phoneTab, setPhoneTab] = useState<'recents' | 'keypad'>('recents');
   const [dialedNumber, setDialedNumber] = useState('');
@@ -253,7 +255,7 @@ export const MiniAppOverlay: React.FC<MiniAppOverlayProps> = ({
               <div className="text-xs font-semibold opacity-70">App Info</div>
               <p className="text-sm">{app.miniAppSummary}</p>
               <div className="text-[11px] font-mono-tabular opacity-60 pt-1">
-                Updated {now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                Updated {openedTime}
               </div>
             </div>
           </div>
